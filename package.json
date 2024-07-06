@@ -1,0 +1,26 @@
+{
+    "name": "game-backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "tsc && node --es-module-specifier-resolution=node build/index.js"
+    },
+    "type": "module",
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/node": "^20.14.10",
+        "@types/request": "^2.48.12",
+        "@types/xml2js": "^0.4.14",
+        "typescript": "^5.5.3",
+        "xml2js": "^0.6.2"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "fastify": "^4.28.1",
+        "request": "^2.88.2",
+        "socket.io": "^4.7.5"
+    }
+}
