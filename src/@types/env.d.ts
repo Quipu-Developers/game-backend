@@ -2,8 +2,10 @@ declare global {
     namespace NodeJS {
         interface ProcessEnv {
             KRDICT_API_KEY: string;
-            MONGO_DBNAME: string;
-            MONGO_DBURL: string;
+            SQL_HOST: string;
+            SQL_USER: string;
+            SQL_PASSWD: string;
+            SQL_DBNAME: string;
         }
     }
 }
