@@ -12,7 +12,7 @@ Vars.app.get("/api/game-end", async (req, res) => {
 });
 
 Vars.app.post("/api/create-user", async (req, res) => {
-    const { userId, userName, phoneNumber } = req.body;
+    const { userId, userName, phoneNumber, score } = req.body;
     if (!Util.phoneNumberValidator(phoneNumber))
         throw new Error("phoneNumber invalid");
 
@@ -20,6 +20,7 @@ Vars.app.post("/api/create-user", async (req, res) => {
         userId,
         userName,
         phoneNumber,
+        score,
     });
     if (!gameEndInfo) throw new Error("already user exists");
 

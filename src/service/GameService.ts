@@ -12,19 +12,21 @@ export namespace GameService {
         // const user = users.find((user) => user.userId == userId);
         // if (!user) return;
         // const globalRank = users.findIndex((user) => user.userId == userId);
-        // return {
-        //     top10GlobalRankings: users.slice(0, 10).map((user) => ({
-        //         userId: user.userId,
-        //         userName: user.userName,
-        //         score: user.score,
-        //     })),
-        //     personalRanking: {
-        //         userId: user.userId,
-        //         userName: user.userName,
-        //         score: user.score,
-        //         globalRank,
-        //     },
-        // };
+        return {
+            top10GlobalRankings: [
+                {
+                    userId: "0",
+                    userName: "0",
+                    score: 0,
+                },
+            ],
+            personalRanking: {
+                userId: "",
+                userName: "user.userName",
+                score: 0,
+                globalRank: 10,
+            },
+        };
     }
 
     export async function createUser(info: DefaultGameUserInfo) {
@@ -34,7 +36,7 @@ export namespace GameService {
         //     ...info,
         //     score: 0,
         // });
-        // return true;
+        return true;
     }
 
     export async function getWords() {
