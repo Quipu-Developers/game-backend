@@ -1,1 +1,2 @@
-export * from "./word";
+import "./word";
+import "./game";
