@@ -1,0 +1,19 @@
+type SessionPacket = {
+    userInfo: Omit<DefaultGameUserInfo, "score">;
+};
+
+type GameIdPacket = {
+    gameId: string;
+};
+
+type DefaultPacket = SessionPacket & GameIdPacket;
+
+type CreateGamePacket = SessionPacket;
+
+type JoinGamePacket = DefaultPacket;
+
+type StartGamePacket = DefaultPacket;
+
+type WordPacket = DefaultPacket & {
+    word: string;
+};

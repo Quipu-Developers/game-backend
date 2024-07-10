@@ -2,14 +2,14 @@ import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { createPool } from "mysql2/promise";
-import "dotenv/config"
+import "dotenv/config";
 
 export namespace Vars {
     const port = 8080;
     export const app = express();
     const server = createServer(app);
     export const io = new Server(server, { cors: { origin: "*" } });
-    
+
     export function checkenv() {
         const DBinfo = {
             host: process.env.SQL_HOST,
@@ -37,5 +37,7 @@ export namespace Vars {
         server.listen({ port, host: "0.0.0.0" }, () =>
             console.log("listening on port " + port)
         );
+
+        checkenv();
     }
 }
