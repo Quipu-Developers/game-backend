@@ -59,7 +59,7 @@ export namespace GameService {
         //     score: 0,
         // });
         const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(`INSERT Users VALUES ("${info.userId}","${info.userName}",${info.score},"${info.phoneNumber}");`);
+        conn.query<RowDataPacket[]>(`INSERT Users VALUES ("${info.userId}","${info.userName}","${info.teamName}",${info.score},"${info.phoneNumber}");`);
 
         return true;
     }

@@ -12,13 +12,14 @@ Vars.app.get("/api/game-end", async (req, res) => {
 });
 
 Vars.app.post("/api/create-user", async (req, res) => {
-    const { userId, userName, phoneNumber, score } = req.body;
+    const { userId, userName, teamName, phoneNumber, score } = req.body;
     if (!Util.phoneNumberValidator(phoneNumber))
         throw new Error("phoneNumber invalid");
 
     const gameEndInfo = await GameService.createUser({
         userId,
         userName,
+        teamName,
         phoneNumber,
         score,
     });
