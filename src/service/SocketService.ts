@@ -78,23 +78,15 @@ export namespace SocketService {
     function listen() {
         Vars.io.on("connection", (socket) => {
             console.log("connected");
-            socket.on("CREATEGAME", ({ userInfo }: CreateGamePacket) => {
-                const uuid = uuidv4();
-                const game = new Game(uuid);
-
-                game.addUser({ score: 0, ...userInfo });
-                gameList.set(uuid, game);
-
-                console.log(userInfo);
-            });
 
             socket.on("JOINGAME", ({ userInfo, gameId }: JoinGamePacket) => {
-                const game = gameList.get(gameId);
+                let game = gameList.get(gameId);
                 if (!game) {
-                    return {
-                        success: false,
-                        errMsg: "해당 게임을 찾을 수 없습니다.",
-                    };
+                    const uuid = uuidv4();
+                    game = new Game(uuid);
+
+                    game.addUser({ score: 0, ...userInfo });
+                    gameList.set(uuid, game);
                 }
 
                 game.addUser({ score: 0, ...userInfo });
