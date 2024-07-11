@@ -77,12 +77,15 @@ export namespace SocketService {
 
     function listen() {
         Vars.io.on("connection", (socket) => {
+            console.log("connected");
             socket.on("CREATEGAME", ({ userInfo }: CreateGamePacket) => {
                 const uuid = uuidv4();
                 const game = new Game(uuid);
 
                 game.addUser({ score: 0, ...userInfo });
                 gameList.set(uuid, game);
+
+                console.log(userInfo);
             });
 
             socket.on("JOINGAME", ({ userInfo, gameId }: JoinGamePacket) => {
@@ -104,7 +107,7 @@ export namespace SocketService {
                 };
             });
 
-            socket.on("STARTGAME", ({ userInfo, gameId }: StartGamePacket) => {
+            socket.on("STARTGAME", ({ gameId }: StartGamePacket) => {
                 const game = gameList.get(gameId);
                 if (!game) {
                     return {

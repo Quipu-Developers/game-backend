@@ -13,16 +13,16 @@ Vars.app.get("/api/game-end", async (req, res) => {
 
 Vars.app.post("/api/create-user", async (req, res) => {
     const { userId, userName, phoneNumber, score } = req.body;
-    if (!Util.phoneNumberValidator(phoneNumber))
-        throw new Error("phoneNumber invalid");
+    console.log(req.body);
+    if (!Util.phoneNumberValidator(phoneNumber)) throw new Error("phoneNumber invalid");
 
-    const gameEndInfo = await GameService.createUser({
+    const created = await GameService.createUser({
         userId,
         userName,
         phoneNumber,
         score,
     });
-    if (!gameEndInfo) throw new Error("already user exists");
+    if (!created) throw new Error("already user exists");
 
-    return gameEndInfo;
+    return created;
 });

@@ -2,11 +2,22 @@ import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { createPool } from "mysql2/promise";
+import cors from "cors";
 import "dotenv/config";
 
 export namespace Vars {
     const port = 8080;
     export const app = express();
+
+    app.use(express.json());
+
+    app.use(
+        cors({
+            origin: "*",
+            credentials: true,
+        })
+    );
+
     const server = createServer(app);
     export const io = new Server(server, { cors: { origin: "*" } });
 
@@ -34,9 +45,7 @@ export namespace Vars {
     });
 
     export async function initialize() {
-        server.listen({ port, host: "0.0.0.0" }, () =>
-            console.log("listening on port " + port)
-        );
+        server.listen({ port, host: "0.0.0.0" }, () => console.log("listening on port " + port));
 
         checkenv();
     }
