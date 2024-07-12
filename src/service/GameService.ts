@@ -2,35 +2,37 @@ import { RowDataPacket } from "mysql2";
 import { Vars } from "../Vars";
 
 export namespace GameService {
-    export async function getGameEndInfo(userId: string) {
+    export async function getGameEndInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
-        const [list] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
-
+        const [personalList] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
+        const [teamList] = await conn.query<RowDataPacket[]>(`SELECT * FROM Teams ORDER BY remainingTime ASC`);
         conn.release();
 
-        //console.log(list)
-        // const users = await Users.find({}).sort({ score: 1 });
-        // const user = users.find((user) => user.userId == userId);
-        // if (!user) return;
-        // const globalRank = users.findIndex((user) => user.userId == userId);
-        /*
+        const personalIndex = personalList.findIndex(item =>  item.userId === userId);
+        const teamId = personalList[personalIndex].teamId;
+        const teamIndex = teamList.findIndex(item => item.teamId === teamId);
+
+        //추후에 순위 중복문제 해결 예정
         return {
-            top10GlobalRankings: [
-                {
-                    userId: "0",
-                    userName: "0",
-                    score: 0,
-                    phoneNumber:"01012345678",
-                },
-            ],
-            personalRanking: {
-                userId: "",
-                userName: "user.userName",
-                score: 0,
-                globalRank: 10,
+            personalRank : {
+                rank: personalIndex + 1,
+                userId: userId,
+                userName: personalList[personalIndex].userName,
+                score: personalList[personalIndex].score,
             },
-        };
-        */
+            teamRank : {
+                rank: teamIndex + 1,
+                teamId: teamId,
+                teamName: teamList[teamIndex].teamName,
+                remainingTime: teamList[teamIndex].remainingTime,
+            }
+        }
+    }
+
+    export async function getGameEndInfoRanks(userId: number) {
+        const conn = await Vars.sql.getConnection();
+        const [list] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
+        conn.release();
         //추후에 순위 중복문제 해결 예정
         const index : number= list.findIndex(item => item.userId === userId);
         const userName : string= `${list[index].userName}`;
@@ -39,7 +41,15 @@ export namespace GameService {
         let length : number = list.length;
         if(length > 10) { length = 10};
         let top10GlobalRankings : RowDataPacket[] = list.splice(0,length);
-
+        const test = {
+            top10GlobalRankings: top10GlobalRankings,
+            personalRanking: {
+                userid:`${userId}`,
+                userName:userName,
+                score:score,
+                globalRank:globalRank,
+            }
+        }
         return {
             top10GlobalRankings: top10GlobalRankings,
             personalRanking: {
@@ -52,15 +62,9 @@ export namespace GameService {
     }
 
     export async function createUser(info: DefaultGameUserInfo) {
-        // const isExist = await Users.exists({ userId: info.userId });
-        // if (isExist) return false;
-        // await Users.create({
-        //     ...info,
-        //     score: 0,
-        // });
         const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(`INSERT Users VALUES ("${info.userId}","${info.userName}",${info.score},"${info.phoneNumber}");`);
-
+        conn.query<RowDataPacket[]>(`INSERT Users VALUES (${info.userId},${info.teamId},"${info.userName}","${info.teamName}","${info.phoneNumber}",${info.score});`);
+        conn.query<RowDataPacket[]>(`INSERT Teams VALUES (${info.teamId},"${info.teamName}",${info.remainingTime});`);
         return true;
     }
 
@@ -68,3 +72,32 @@ export namespace GameService {
         return ["바나나", "사과나", "딸기야"];
     }
 }
+
+/**
+ createUser = 
+{
+userId: number, 
+teamId: number,
+userName: string,
+teamName: string,
+phoneNumber: string,
+Score: number,
+isStarted: boolean
+}
+
+getGameEndInfo = 
+personalRank: 
+{
+rank: number,
+userId: number,
+userName: string,
+score: number
+},
+teamRank:
+{
+rank: number,
+teamId: number,
+teamName: string,
+remainingTime: number
+}
+ */

@@ -30,7 +30,7 @@ export namespace SocketService {
             };
         }
 
-        public getUser(userId: string) {
+        public getUser(userId: number) {
             return this.users.find((user) => user.userId == userId);
         }
 
@@ -42,7 +42,7 @@ export namespace SocketService {
             this.users.splice(this.users.indexOf(user), 1);
         }
 
-        public word(userId: string, word: string) {
+        public word(userId: number, word: string) {
             const user = this.getUser(userId);
             if (!user) return false;
 
