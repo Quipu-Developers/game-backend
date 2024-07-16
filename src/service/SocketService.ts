@@ -30,7 +30,7 @@ export namespace SocketService {
             };
         }
 
-        public getUser(userId: string) {
+        public getUser(userId: number) {
             return this.users.find((user) => user.userId == userId);
         }
 
@@ -42,7 +42,7 @@ export namespace SocketService {
             this.users.splice(this.users.indexOf(user), 1);
         }
 
-        public word(userId: string, word: string) {
+        public word(userId: number, word: string) {
             const user = this.getUser(userId);
             if (!user) return false;
 
@@ -77,9 +77,7 @@ export namespace SocketService {
 
     function listen() {
         Vars.io.on("connection", (socket) => {
-            console.log("connected");
-
-            socket.on("JOINGAME", ({ userInfo, gameId }: JoinGamePacket) => {
+            socket.on("JOINGAME", ({ userInfo, gameId }: JoinGamePacket, callback) => {
                 let game = gameList.get(gameId);
                 if (!game) {
                     const uuid = uuidv4();
@@ -89,46 +87,40 @@ export namespace SocketService {
                     gameList.set(uuid, game);
                 }
 
+                callback({
+                    success: true,
+                    game: game.getGameInfo(),
+                });
+
                 game.addUser({ score: 0, ...userInfo });
 
                 Vars.io.emit("JOINUSER", { userInfo });
-
-                return {
-                    success: true,
-                    game: game.getGameInfo(),
-                };
             });
 
             socket.on("STARTGAME", ({ gameId }: StartGamePacket) => {
                 const game = gameList.get(gameId);
                 if (!game) {
-                    return {
-                        success: false,
-                        errMsg: "해당 게임을 찾을 수 없습니다.",
-                    };
+                    return;
                 }
 
                 game.startGame();
                 game.timer = setTimeout(() => {
                     game.endGame();
                 }, 1000 * 50);
-
-                return { success: true };
             });
 
-            socket.on("WORD", ({ userInfo, gameId, word }: WordPacket) => {
+            socket.on("WORD", ({ userInfo, gameId, word }: WordPacket, callback) => {
                 const game = gameList.get(gameId);
                 if (!game) {
-                    return {
+                    callback({
                         success: false,
                         errMsg: "해당 게임을 찾을 수 없습니다.",
-                    };
+                    });
+                    return;
                 }
 
                 const success = game.word(userInfo.userId, word);
                 Vars.io.emit("WORD", { userId: userInfo.userId, success, word, gameInfo: game.getGameInfo() });
-
-                return { success, game };
             });
         });
     }
