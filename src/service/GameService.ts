@@ -72,7 +72,7 @@ export namespace GameService {
         return true;
     }
 
-    export async function updateUserInfo(userId: number, info: DefaultGameUserInfo) {}
+    export async function updateUserInfo(userId: number, info: Partial<DefaultGameUserInfo>) {}
     export async function deleteUserInfo(userId: number) {}
 
     export async function getWords() {
