@@ -32,6 +32,32 @@ Vars.app.post("/api/create-user", async (req, res) => {
 
 //use GameService.deleteUser and GameService.updateUser
 
-Vars.app.post("/api/delete-user", async (req, res) => {});
+Vars.app.post("/api/delete-user", async (req, res) => {
+    const userId = req.query.userId;
 
-Vars.app.post("/api/update-user", async (req, res) => {});
+    sql.query('DELETE FROM users WHERE userid = ?', [userId], (error, results) => {
+        if (error) {
+            res.status(500).send({ message: 'An error occurred', error: error.message });
+        } else if (results.affectedRows > 0) {
+            res.status(200).send({ message: 'User deleted successfully' });
+        } else {
+            res.status(404).send({ message: 'User not found' });
+        }
+    });
+});
+
+Vars.app.post("/api/update-user", async (req, res) => {
+    const { userid, userinfo } = req.body;
+
+    if (!userid || !userinfo) {
+        return res.status(400).send({ message: 'userId and userinfo are required' });
+    }
+
+    sql.query('INSERT INTO users (userId, userinfo) VALUES (?, ?)', [userid, userinfo], (error, results) => {
+        if (error) {
+            res.status(500).send({ message: 'An error occurred', error: error.message });
+        } else {
+            res.status(201).send({ message: 'User added successfully', userId: results.insertId });
+        }
+    });
+});
