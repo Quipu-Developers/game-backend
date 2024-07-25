@@ -65,13 +65,18 @@ export namespace GameService {
 
     export async function updateUserInfo(userId: number, info: Partial<DefaultGameUserInfo>) {
         const conn = await Vars.sql.getConnection();
+
         conn.query<RowDataPacket[]>(
-            `UPDATE Users SET "teamId" =  ${info.teamId}, "userName" =  "${info.userName}", "teamName" =  "${info.teamName}", "phoneNumber" =  "${info.phoneNumber}", "score" =  ${info.score}, where userId =  ${userId};`
+            `
+                    UPDATE Users
+                    SET ?
+                    WHERE userId = ?;
+                `,
+            [info, userId]
         );
         conn.release();
         return true;
     }
-
     export async function deleteUserInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
         conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE userId =  ${userId};`);

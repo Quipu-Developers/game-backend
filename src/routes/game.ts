@@ -8,7 +8,7 @@ Vars.app.get("/api/game-end", async (req, res) => {
     const gameEndInfo = await GameService.getGameEndInfo(userId);
     if (!gameEndInfo) throw new Error("gameUser is not found");
 
-    return gameEndInfo;
+    return res.json(gameEndInfo);
 });
 
 Vars.app.post("/api/create-user", async (req, res) => {
@@ -27,7 +27,7 @@ Vars.app.post("/api/create-user", async (req, res) => {
     });
     if (!created) throw new Error("already user exists");
 
-    return created;
+    return res.json({ created });
 });
 
 //use GameService.deleteUser and GameService.updateUser
@@ -37,7 +37,13 @@ Vars.app.post("/api/delete-user", async (req, res) => {
 
     const success = await GameService.deleteUserInfo(userId);
 
-    return success;
+    return res.json({ success });
 });
 
-Vars.app.post("/api/update-user", async (req, res) => {});
+Vars.app.post("/api/update-user", async (req, res) => {
+    const { userId, info } = req.body;
+
+    const success = await GameService.updateUserInfo(userId, info);
+
+    return res.json({ success });
+});
