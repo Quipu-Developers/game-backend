@@ -56,10 +56,10 @@ export namespace GameService {
 
     export async function createUser(info: DefaultGameUserInfo) {
         const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(
-            `INSERT Users VALUES (${info.userId},${info.teamId},"${info.userName}","${info.teamName}","${info.phoneNumber}",${info.score});`
-        );
-        conn.query<RowDataPacket[]>(`INSERT Teams VALUES (${info.teamId},"${info.teamName}",${info.remainingTime});`);
+        conn.query<RowDataPacket[]>(`INSERT Users VALUES (?);`, [
+            [info.userId, info.teamId, info.userName, info.teamName, info.phoneNumber, info.score],
+        ]);
+        conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [[info.teamId, info.teamName, info.remainingTime]]);
         return true;
     }
 
@@ -79,7 +79,7 @@ export namespace GameService {
     }
     export async function deleteUserInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE userId =  ${userId};`);
+        conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE ?;`, [{ userId }]);
         conn.release();
         return true;
     }
