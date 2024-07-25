@@ -95,18 +95,13 @@ export namespace SocketService {
                 game.addUser({ score: 0, ...userInfo });
 
                 Vars.io.emit("JOINUSER", { userInfo });
-            });
 
-            socket.on("STARTGAME", ({ gameId }: StartGamePacket) => {
-                const game = gameList.get(gameId);
-                if (!game) {
-                    return;
+                if (game.users.length == 3) {
+                    game.startGame();
+                    game.timer = setTimeout(() => {
+                        game.endGame();
+                    }, 1000 * 50);
                 }
-
-                game.startGame();
-                game.timer = setTimeout(() => {
-                    game.endGame();
-                }, 1000 * 50);
             });
 
             socket.on("WORD", ({ userInfo, gameId, word }: WordPacket, callback) => {

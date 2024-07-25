@@ -43,15 +43,6 @@ export namespace GameService {
             length = 10;
         }
         let top10GlobalRankings: RowDataPacket[] = list.splice(0, length);
-        const test = {
-            top10GlobalRankings: top10GlobalRankings,
-            personalRanking: {
-                userid: `${userId}`,
-                userName: userName,
-                score: score,
-                globalRank: globalRank,
-            },
-        };
         return {
             top10GlobalRankings: top10GlobalRankings,
             personalRanking: {
@@ -72,8 +63,21 @@ export namespace GameService {
         return true;
     }
 
-    export async function updateUserInfo(userId: number, info: Partial<DefaultGameUserInfo>) {}
-    export async function deleteUserInfo(userId: number) {}
+    export async function updateUserInfo(userId: number, info: Partial<DefaultGameUserInfo>) {
+        const conn = await Vars.sql.getConnection();
+        conn.query<RowDataPacket[]>(
+            `UPDATE Users SET "teamId" =  ${info.teamId}, "userName" =  "${info.userName}", "teamName" =  "${info.teamName}", "phoneNumber" =  "${info.phoneNumber}", "score" =  ${info.score}, where userId =  ${userId};`
+        );
+        conn.release();
+        return true;
+    }
+
+    export async function deleteUserInfo(userId: number) {
+        const conn = await Vars.sql.getConnection();
+        conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE userId =  ${userId};`);
+        conn.release();
+        return true;
+    }
 
     export async function getWords() {
         return ["바나나", "사과나", "딸기야"];

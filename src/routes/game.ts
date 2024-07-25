@@ -32,6 +32,12 @@ Vars.app.post("/api/create-user", async (req, res) => {
 
 //use GameService.deleteUser and GameService.updateUser
 
-Vars.app.post("/api/delete-user", async (req, res) => {});
+Vars.app.post("/api/delete-user", async (req, res) => {
+    const { userId } = req.body;
+
+    const success = await GameService.deleteUserInfo(userId);
+
+    return success;
+});
 
 Vars.app.post("/api/update-user", async (req, res) => {});
