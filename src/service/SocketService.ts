@@ -96,7 +96,7 @@ export namespace SocketService {
 
                 Vars.io.emit("JOINUSER", { userInfo });
 
-                if (game.users.length == 3) {
+                if (game.users.length == 2) {
                     game.startGame();
                     game.timer = setTimeout(() => {
                         game.endGame();
