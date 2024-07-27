@@ -3,7 +3,7 @@
     "compilerOptions": {
         "declaration": true,
         "target": "ESNext",
-        "module": "ESNext",
+        "module": "CommonJS",
         "moduleResolution": "node",
 
         "outDir": "build",
