@@ -12,7 +12,7 @@ export namespace GameService {
         const teamId = personalList[personalIndex].teamId;
         const teamIndex = teamList.findIndex((item) => item.teamId === teamId);
 
-        //추후에 순위 중복문제 해결 예정
+        /** 추후에 순위 중복문제 해결 예정 */
         return {
             personalRank: {
                 rank: personalIndex + 1,
@@ -54,12 +54,61 @@ export namespace GameService {
         };
     }
 
-    export async function createUser(info: DefaultGameUserInfo) {
+    /** userId와 teamId는 필수 */
+    export async function createUser(info: Partial<DefaultGameUserInfo>) : Promise<boolean> {
         const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(`INSERT Users VALUES (?);`, [
-            [info.userId, info.teamId, info.userName, info.teamName, info.phoneNumber, info.score],
+        const exist = await conn.query<RowDataPacket[]>(`select exists (select userId from Users where userId = ${info.userId}) as success;`);
+        // 1이면 이미 존재
+        if(exist[0][0]["success"]) {
+            console.log("userId 이미 존재함");
+            conn.release();
+            return false;
+        } else {
+            conn.query<RowDataPacket[]>(`INSERT Users VALUES (?);`, [
+                [info.userId, info.teamId, info.userName, info.teamName, info.phoneNumber, info.score],
+            ]);
+            conn.release();
+            // 팀생성 분리
+            //conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [[info.teamId, info.teamName, info.remainingTime]]);
+            return true;
+        }
+    }
+
+    export async function createTeam(info : Partial<DefaultGameTeamInfo>) {
+        const conn = await Vars.sql.getConnection();
+        const exist = await conn.query<RowDataPacket[]>(`select exists (select teamId from Teams where teamId = ${info.teamId}) as success;`);
+        if(exist[0][0]["success"]) {
+            console.log("userId 이미 존재함");
+            conn.release();
+            return false;
+        } else {
+            conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [
+                [info.teamId, info.teamName, info.remainingTime],
+            ]);
+            conn.release();
+            // 팀생성 분리
+            //conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [[info.teamId, info.teamName, info.remainingTime]]);
+            return true;
+        }
+
+
+        conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [
+            [info.teamId, info.teamName, info.remainingTime],
         ]);
-        conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [[info.teamId, info.teamName, info.remainingTime]]);
+    }
+
+    export async function updateTeamInfo(teamId : number, info : Partial<DefaultGameTeamInfo>) {
+        const conn = await Vars.sql.getConnection();
+
+        conn.query<RowDataPacket[]>(
+            `
+                    UPDATE Teams
+                    SET ?
+                    WHERE userId = ?;
+                `,
+            [info, teamId]
+        );
+        conn.release();
         return true;
     }
 
@@ -77,11 +126,28 @@ export namespace GameService {
         conn.release();
         return true;
     }
+
+    export async function deleteTeamInfo(teamId : number) {
+        const conn = await Vars.sql.getConnection();
+        conn.query<RowDataPacket[]>(`DELETE FROM Teams WHERE ?;`, [{ teamId }]);
+        conn.release();
+        return true;
+    }
+
     export async function deleteUserInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
         conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE ?;`, [{ userId }]);
         conn.release();
         return true;
+    }
+
+    export async function existTeam(teamId : number) {
+        const conn = await Vars.sql.getConnection();
+        
+    }
+
+    export async function existUser(userId : number) {
+
     }
 
     export async function getWords() {
