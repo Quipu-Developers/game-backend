@@ -12,6 +12,10 @@ type CreateGamePacket = SessionPacket;
 
 type JoinGamePacket = DefaultPacket;
 
+type ChangeTeamNamePacket = DefaultPacket & {
+    teamName: string;
+};
+
 type StartGamePacket = DefaultPacket;
 
 type WordPacket = DefaultPacket & {

@@ -5,11 +5,10 @@ interface DefaultGameUserInfo {
     teamName: string;
     phoneNumber: string;
     score: number;
-    remainingTime: number;
 }
 
 interface DefaultGameTeamInfo {
-    teamId : number;
-    teamName : string;
-    remainingTime : number;
+    teamId: number;
+    teamName: string;
+    remainingTime: number;
 }

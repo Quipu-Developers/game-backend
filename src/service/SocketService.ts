@@ -1,6 +1,7 @@
 import { GameWords } from "../constants";
 import { Vars } from "../Vars";
 import { v4 as uuidv4 } from "uuid";
+import { GameService } from "./GameService";
 
 export namespace SocketService {
     export async function initialize() {
@@ -13,13 +14,10 @@ export namespace SocketService {
         public users: DefaultGameUserInfo[] = [];
         public words: string[] = GameWords;
         public isStarted = false;
-        public gameId: string;
         public startTime?: number;
         public timer?: NodeJS.Timeout;
 
-        constructor(gameId: string) {
-            this.gameId = gameId;
-        }
+        constructor(public gameId: string, public teamId: number) {}
 
         public getGameInfo() {
             return {
@@ -57,9 +55,12 @@ export namespace SocketService {
             return true;
         }
 
-        public startGame() {
+        public async startGame() {
             this.isStarted = true;
             this.startTime = Date.now();
+            for (const user of this.users) {
+                await GameService.updateUserInfo(user.userId, { teamId: this.teamId });
+            }
 
             Vars.io.emit("STARTGAME", { gameInfo: this.getGameInfo() });
         }
@@ -77,11 +78,13 @@ export namespace SocketService {
 
     function listen() {
         Vars.io.on("connection", (socket) => {
-            socket.on("JOINGAME", ({ userInfo, gameId }: JoinGamePacket, callback) => {
+            socket.on("JOINGAME", async ({ userInfo, gameId }: JoinGamePacket, callback) => {
                 let game = gameList.get(gameId);
                 if (!game) {
                     const uuid = uuidv4();
-                    game = new Game(uuid);
+                    const { teamId } = await GameService.createTeam({});
+                    socket.join(`${teamId}`);
+                    game = new Game(uuid, teamId);
 
                     game.addUser({ score: 0, ...userInfo });
                     gameList.set(uuid, game);
@@ -97,7 +100,7 @@ export namespace SocketService {
                 Vars.io.emit("JOINUSER", { userInfo });
 
                 if (game.users.length == 2) {
-                    game.startGame();
+                    await game.startGame();
                     game.timer = setTimeout(() => {
                         game.endGame();
                     }, 1000 * 50);

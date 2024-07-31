@@ -12,25 +12,17 @@ Vars.app.get("/api/game-end", async (req, res) => {
 });
 
 Vars.app.post("/api/create-user", async (req, res) => {
-    const { userId, userName, phoneNumber, score, teamId, teamName, remainingTime } = req.body;
+    const { userName, phoneNumber } = req.body;
 
     if (!Util.phoneNumberValidator(phoneNumber)) throw new Error("phoneNumber invalid");
 
-    const created = await GameService.createUser({
-        userId,
+    const { userId } = await GameService.createUser({
         userName,
         phoneNumber,
-        score,
-        teamId,
-        teamName,
-        remainingTime,
     });
-    if (!created) throw new Error("already user exists");
 
-    return res.json({ created });
+    return res.json({ userId });
 });
-
-//use GameService.deleteUser and GameService.updateUser
 
 Vars.app.post("/api/delete-user", async (req, res) => {
     const { userId } = req.body;

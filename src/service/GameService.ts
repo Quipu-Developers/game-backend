@@ -1,4 +1,4 @@
-import { RowDataPacket } from "mysql2";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { Vars } from "../Vars";
 
 export namespace GameService {
@@ -54,57 +54,46 @@ export namespace GameService {
         };
     }
 
-    /** userId와 teamId는 필수 */
-    export async function createUser(info: Partial<DefaultGameUserInfo>) : Promise<boolean> {
-        const conn = await Vars.sql.getConnection();
-        const exist = await conn.query<RowDataPacket[]>(`select exists (select userId from Users where userId = ${info.userId}) as success;`);
-        // 1이면 이미 존재
-        if(exist[0][0]["success"]) {
-            console.log("userId 이미 존재함");
-            conn.release();
-            return false;
-        } else {
-            conn.query<RowDataPacket[]>(`INSERT Users VALUES (?);`, [
-                [info.userId, info.teamId, info.userName, info.teamName, info.phoneNumber, info.score],
-            ]);
-            conn.release();
-            // 팀생성 분리
-            //conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [[info.teamId, info.teamName, info.remainingTime]]);
-            return true;
-        }
+    let currentUsers = [];
+    let currentTeam: number | undefined;
+
+    export function refreshTeam() {
+        currentUsers = [];
+        currentTeam = undefined;
     }
 
-    export async function createTeam(info : Partial<DefaultGameTeamInfo>) {
+    export async function createUser(info: Partial<DefaultGameUserInfo>) {
         const conn = await Vars.sql.getConnection();
-        const exist = await conn.query<RowDataPacket[]>(`select exists (select teamId from Teams where teamId = ${info.teamId}) as success;`);
-        if(exist[0][0]["success"]) {
-            console.log("userId 이미 존재함");
-            conn.release();
-            return false;
-        } else {
-            conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [
-                [info.teamId, info.teamName, info.remainingTime],
-            ]);
-            conn.release();
-            // 팀생성 분리
-            //conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [[info.teamId, info.teamName, info.remainingTime]]);
-            return true;
-        }
+        const [result] = await conn.execute<ResultSetHeader>(
+            `INSERT INTO Users (userName, phoneNumber) VALUES (?, ?);`,
+            [info.userName, info.phoneNumber]
+        );
+        conn.release();
 
+        const userId = result.insertId;
 
-        conn.query<RowDataPacket[]>(`INSERT Teams VALUES (?);`, [
-            [info.teamId, info.teamName, info.remainingTime],
+        currentUsers.push(userId);
+
+        return { userId };
+    }
+
+    export async function createTeam(info: Partial<DefaultGameTeamInfo>) {
+        const conn = await Vars.sql.getConnection();
+        const [result] = await conn.execute<ResultSetHeader>(`INSERT INTO Teams (teamName) VALUES (?);`, [
+            info.teamName ?? "no name",
         ]);
+        conn.release();
+        return { teamId: result.insertId };
     }
 
-    export async function updateTeamInfo(teamId : number, info : Partial<DefaultGameTeamInfo>) {
+    export async function updateTeamInfo(teamId: number, info: Partial<DefaultGameTeamInfo>) {
         const conn = await Vars.sql.getConnection();
 
         conn.query<RowDataPacket[]>(
             `
                     UPDATE Teams
                     SET ?
-                    WHERE userId = ?;
+                    WHERE teamId = ?;
                 `,
             [info, teamId]
         );
@@ -127,7 +116,7 @@ export namespace GameService {
         return true;
     }
 
-    export async function deleteTeamInfo(teamId : number) {
+    export async function deleteTeamInfo(teamId: number) {
         const conn = await Vars.sql.getConnection();
         conn.query<RowDataPacket[]>(`DELETE FROM Teams WHERE ?;`, [{ teamId }]);
         conn.release();
@@ -141,14 +130,11 @@ export namespace GameService {
         return true;
     }
 
-    export async function existTeam(teamId : number) {
+    export async function existTeam(teamId: number) {
         const conn = await Vars.sql.getConnection();
-        
     }
 
-    export async function existUser(userId : number) {
-
-    }
+    export async function existUser(userId: number) {}
 
     export async function getWords() {
         return ["바나나", "사과나", "딸기야"];
