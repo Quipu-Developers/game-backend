@@ -1,5 +1,9 @@
-import { Vars } from "../Vars";
+import { Router } from "express";
 
-Vars.app.get("/info", async (req, res) => {
+const defaultRouter = Router();
+
+defaultRouter.get("/info", async (req, res) => {
     return res.json({ success: false });
 });
+
+export default defaultRouter;
