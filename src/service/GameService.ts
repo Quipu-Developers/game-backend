@@ -4,6 +4,7 @@ import { Vars } from "../Vars";
 export namespace GameService {
     export async function getGameEndInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
+        deleteManagerInfo();
         const [personalList] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
         const [teamList] = await conn.query<RowDataPacket[]>(`SELECT * FROM Teams ORDER BY remainingTime ASC`);
         conn.release();
@@ -31,6 +32,7 @@ export namespace GameService {
 
     export async function getGameEndInfoRanks(userId: number) {
         const conn = await Vars.sql.getConnection();
+        deleteManagerInfo();
         const [list] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
         conn.release();
         //추후에 순위 중복문제 해결 예정
@@ -56,6 +58,21 @@ export namespace GameService {
 
     let currentUsers = [];
     let currentTeam: number | undefined;
+    const managerList = ["관리자1", "관리자2", "관리자3"];
+
+    export async function settingManager() {
+        const conn = await Vars.sql.getConnection();
+        const [result] = await conn.execute<RowDataPacket[]>(
+            `SELECT EXISTS(SELECT 1 FROM Users WHERE userName IN (?,?,?)) as cnt;`,
+            managerList
+        );
+        
+        if(result[0].cnt) {
+            // 관리자 정보 삭제
+            deleteManagerInfo();
+        }
+        conn.release();
+    }
 
     export function refreshTeam() {
         currentUsers = [];
@@ -126,6 +143,13 @@ export namespace GameService {
     export async function deleteUserInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
         conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE ?;`, [{ userId }]);
+        conn.release();
+        return true;
+    }
+
+    export async function deleteManagerInfo() {
+        const conn = await Vars.sql.getConnection();
+        conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE userName In (?);`, managerList);
         conn.release();
         return true;
     }
