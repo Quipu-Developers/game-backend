@@ -11,4 +11,5 @@ interface DefaultGameTeamInfo {
     teamId: number;
     teamName: string;
     remainingTime: number;
+    teamScore : number;
 }
