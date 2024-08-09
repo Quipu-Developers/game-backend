@@ -4,12 +4,14 @@ import { Vars } from "../Vars";
 export namespace GameService {
     export async function getGameEndInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
-        deleteManagerInfo();
+        //deleteManagerInfo();
         const [personalList] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
         const [teamList] = await conn.query<RowDataPacket[]>(`SELECT * FROM Teams ORDER BY remainingTime ASC`);
         conn.release();
 
-        const personalIndex = personalList.findIndex((item) => item.userId === userId);
+        let personalListResult = personalList.filter((item) => !managerList.includes(item.userName));
+
+        const personalIndex = personalListResult.findIndex((item) => item.userId === userId);
         const teamId = personalList[personalIndex].teamId;
         const teamIndex = teamList.findIndex((item) => item.teamId === teamId);
 
@@ -32,8 +34,9 @@ export namespace GameService {
 
     export async function getGameEndInfoRanks(userId: number) {
         const conn = await Vars.sql.getConnection();
-        deleteManagerInfo();
-        const [list] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
+        //deleteManagerInfo();
+        const [personalList] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
+        let list = personalList.filter((item) => !managerList.includes(item.userName));
         conn.release();
         //추후에 순위 중복문제 해결 예정
         const index: number = list.findIndex((item) => item.userId === userId);
