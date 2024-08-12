@@ -62,7 +62,7 @@ export namespace SocketService {
                 await GameService.updateUserInfo(user.userId, { teamId: this.teamId });
             }
 
-            Vars.io.emit("STARTGAME", { gameInfo: this.getGameInfo() });
+            Vars.io.to(this.teamId.toString()).emit("STARTGAME", { gameInfo: this.getGameInfo() });
         }
 
         public endGame() {
@@ -72,7 +72,7 @@ export namespace SocketService {
             clearTimeout(this.timer);
             gameList.delete(this.gameId);
 
-            Vars.io.emit("ENDGAME", { gameInfo: this.getGameInfo(), timeScore });
+            Vars.io.to(this.teamId.toString()).emit("ENDGAME", { gameInfo: this.getGameInfo(), timeScore });
         }
     }
 
@@ -97,7 +97,7 @@ export namespace SocketService {
 
                 game.addUser({ score: 0, ...userInfo });
 
-                Vars.io.emit("JOINUSER", { userInfo });
+                socket.broadcast.to(game.teamId.toString()).emit("JOINUSER", { userInfo });
 
                 if (game.users.length == 2) {
                     await game.startGame();
@@ -105,6 +105,19 @@ export namespace SocketService {
                         game.endGame();
                     }, 1000 * 50);
                 }
+            });
+
+            socket.on("CHAT", ({ userInfo, gameId, message }: ChatPacket, callback) => {
+                const game = gameList.get(gameId);
+                if (!game) {
+                    callback({
+                        success: false,
+                        errMsg: "해당 게임을 찾을 수 없습니다.",
+                    });
+                    return;
+                }
+
+                socket.broadcast.to(game.teamId.toString()).emit("WORD", { userId: userInfo.userId, message });
             });
 
             socket.on("WORD", ({ userInfo, gameId, word }: WordPacket, callback) => {
@@ -118,7 +131,9 @@ export namespace SocketService {
                 }
 
                 const success = game.word(userInfo.userId, word);
-                Vars.io.emit("WORD", { userId: userInfo.userId, success, word, gameInfo: game.getGameInfo() });
+                socket.broadcast
+                    .to(game.teamId.toString())
+                    .emit("WORD", { userId: userInfo.userId, success, word, gameInfo: game.getGameInfo() });
             });
         });
     }

@@ -21,3 +21,7 @@ type StartGamePacket = DefaultPacket;
 type WordPacket = DefaultPacket & {
     word: string;
 };
+
+type ChatPacket = DefaultPacket & {
+    message: string;
+};
