@@ -117,7 +117,7 @@ export namespace SocketService {
                     return;
                 }
 
-                socket.broadcast.to(game.teamId.toString()).emit("WORD", { userId: userInfo.userId, message });
+                socket.broadcast.to(game.teamId.toString()).emit("CHAT", { userId: userInfo.userId, message });
             });
 
             socket.on("WORD", ({ userInfo, gameId, word }: WordPacket, callback) => {
