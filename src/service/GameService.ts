@@ -9,19 +9,21 @@ export namespace GameService {
         const [teamList] = await conn.query<RowDataPacket[]>(`SELECT * FROM Teams ORDER BY remainingTime ASC`);
         conn.release();
 
-        let personalListResult = personalList.filter((item) => !managerList.includes(item.userName));
+        const personalListResult =  personalList.filter((item) => !managerList.includes(item.userName));
+        //console.log(teamList);
 
         const personalIndex = personalListResult.findIndex((item) => item.userId === userId);
-        const teamId = personalList[personalIndex].teamId;
+        const teamId = personalListResult[personalIndex].teamId;
         const teamIndex = teamList.findIndex((item) => item.teamId === teamId);
+        //console.log(teamList[teamIndex].teamName);
 
         /** 추후에 순위 중복문제 해결 예정 */
         return {
             personalRank: {
                 rank: personalIndex + 1,
                 userId: userId,
-                userName: personalList[personalIndex].userName,
-                score: personalList[personalIndex].score,
+                userName: personalListResult[personalIndex].userName,
+                score: personalListResult[personalIndex].score,
             },
             teamRank: {
                 rank: teamIndex + 1,
@@ -166,6 +168,11 @@ export namespace GameService {
     export async function getWords() {
         return ["바나나", "사과나", "딸기야"];
     }
+}
+
+export async function getTeamScore(teamId : number) : Promise<number> {
+
+    return 0;
 }
 
 /**
