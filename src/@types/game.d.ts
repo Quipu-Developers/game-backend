@@ -7,8 +7,13 @@ interface DefaultGameUserInfo {
     score: number;
 }
 
+interface RoomGameUserInfo implements DefaultGameTeamInfo {
+
+}
+
 interface DefaultGameTeamInfo {
     teamId: number;
     teamName: string;
     remainingTime: number;
 }
+
