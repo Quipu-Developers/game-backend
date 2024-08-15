@@ -1,22 +1,22 @@
 export namespace RoomService {
     let rooms: Room[] = [];
 
-    function getRooms() {
+    export function getRooms() {
         return rooms;
     }
 
-    function createRoom(roomId: string) {
+    export function createRoom(roomId: string) {
         rooms.push(new Room(roomId));
     }
 
-    function deleteAllRoom() {
+    export function deleteAllRoom() {
         rooms = [];
     }
 }
 
 class Room {
     private members: RoomGameUserInfo[] = [];
-    public chats: { userId: number; data: string }[] = [];
+    private chats: { userId: number; data: string }[] = [];
 
     constructor(public roomId: string) {}
 
