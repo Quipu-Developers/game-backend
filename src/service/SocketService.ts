@@ -67,7 +67,7 @@ export namespace SocketService {
                 const rooms = RoomService.getRooms();
                 callback({
                     success: true,
-                    rooms: rooms.map((room) => ({ users: room.getUsers(), ready: room.ready })),
+                    rooms: rooms.map((room) => ({ users: room.getUsers(), started: room.getGame().isStarted })),
                 });
             });
 

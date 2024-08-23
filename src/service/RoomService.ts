@@ -46,7 +46,6 @@ type RoomUserInfo = DefaultGameUserInfo & {
 export class Room {
     private users: RoomUserInfo[] = [];
     private game: Game;
-    public ready = false;
     chat: { userId: number; text: string }[] = [];
 
     constructor(game: Game, public roomId: string, public roomName: string) {
@@ -86,8 +85,6 @@ export class Room {
         for (const user of this.users) {
             await DatabaseService.updateUserInfo(user.userId, { teamId });
         }
-
-        this.ready = true;
     }
 
     addChat(userId: number, text: string) {
