@@ -1,7 +1,5 @@
 import { Vars } from "../Vars";
 import { GameWords } from "src/constants";
-import { Room, RoomService } from "./RoomService";
-import { DatabaseService } from "./DatabaseService";
 
 export class Game {
     public users: DefaultGameUserInfo[] = [];
@@ -56,21 +54,10 @@ export class Game {
 
     public async endGame() {
         if (!this.startTime) throw new Error("can't end game without startTime");
-        const timeScore = Math.floor((Date.now() - this.startTime) / 1000) * 10;
 
         clearTimeout(this.timer);
 
-        let totalScore = 0;
-
-        totalScore += timeScore;
-
-        for (const user of this.users) {
-            totalScore += user.score;
-        }
-
-        await DatabaseService.updateTeamInfo(RoomService.getRoom(this.roomId)!.leader.teamId, { score: totalScore });
-
-        Vars.io.to(this.roomId).emit("ENDGAME", { timeScore, totalScore });
+        Vars.io.to(this.roomId).emit("ENDGAME", { users: this.users });
         const sockets = await Vars.io.sockets.in(this.roomId).fetchSockets();
 
         for (const socket of sockets) {

@@ -11,6 +11,11 @@ type LoginPacket = {
     phoneNumber: string;
 };
 
+type DeleteRoomPacket = {
+    roomId: string;
+    userId: number;
+};
+
 type JoinRoomPacket = {
     userId: number;
     roomId: string;
@@ -19,12 +24,6 @@ type JoinRoomPacket = {
 type CreateRoomPacket = {
     userId: number;
     roomName: string;
-};
-
-type SetTeamPacket = {
-    userId: number;
-    roomId: string;
-    teamName: string;
 };
 
 type StartGamePacket = {
@@ -43,10 +42,6 @@ type DefaultPacket = SessionPacket & GameIdPacket;
 type CreateGamePacket = SessionPacket;
 
 type JoinGamePacket = DefaultPacket;
-
-type ChangeTeamNamePacket = DefaultPacket & {
-    teamName: string;
-};
 
 type ChatPacket = DefaultPacket & {
     roomId: string;

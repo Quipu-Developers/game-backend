@@ -82,30 +82,6 @@ export namespace DatabaseService {
         return { userId };
     }
 
-    export async function createTeam(info: Partial<DefaultGameTeamInfo>) {
-        const conn = await Vars.sql.getConnection();
-        const [result] = await conn.execute<ResultSetHeader>(`INSERT INTO Teams (teamName) VALUES (?);`, [
-            info.teamName ?? "no name",
-        ]);
-        conn.release();
-        return { teamId: result.insertId };
-    }
-
-    export async function updateTeamInfo(teamId: number, info: Partial<DefaultGameTeamInfo>) {
-        const conn = await Vars.sql.getConnection();
-
-        conn.query<RowDataPacket[]>(
-            `
-                    UPDATE Teams
-                    SET ?
-                    WHERE teamId = ?;
-                `,
-            [info, teamId]
-        );
-        conn.release();
-        return true;
-    }
-
     export async function updateUserInfo(userId: number, info: Partial<DefaultGameUserInfo>) {
         const conn = await Vars.sql.getConnection();
 
@@ -121,27 +97,10 @@ export namespace DatabaseService {
         return true;
     }
 
-    export async function deleteTeamInfo(teamId: number) {
-        const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(`DELETE FROM Teams WHERE ?;`, [{ teamId }]);
-        conn.release();
-        return true;
-    }
-
     export async function deleteUserInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
         conn.query<RowDataPacket[]>(`DELETE FROM Users WHERE ?;`, [{ userId }]);
         conn.release();
         return true;
-    }
-
-    export async function existTeam(teamId: number) {
-        const conn = await Vars.sql.getConnection();
-    }
-
-    export async function existUser(userId: number) {}
-
-    export async function getWords() {
-        return ["바나나", "사과나", "딸기야"];
     }
 }

@@ -24,7 +24,7 @@ export namespace SocketService {
                 });
             });
 
-            socket.on("DELETEROOM", async ({ roomId, userId }, callback) => {
+            socket.on("DELETEROOM", async ({ roomId, userId }: DeleteRoomPacket, callback) => {
                 const room = RoomService.getRoom(roomId);
 
                 const user = room?.getUser(userId);
@@ -38,6 +38,7 @@ export namespace SocketService {
 
                 callback({ success: true });
             });
+
             /**                          방아이디, 강퇴하는 유저아이디, 강퇴당하는 유저아이디 */
             socket.on("KICKMEMBER", async ({ roomId, userId, targetId }, callback) => {
                 const room = RoomService.getRoom(roomId);
@@ -113,7 +114,6 @@ export namespace SocketService {
                 game.addUser(user);
 
                 const room = new Room(game, roomId, roomName);
-                await room.setTeam(roomName);
 
                 RoomService.addRoom(room);
                 room.addUser(user, "leader");

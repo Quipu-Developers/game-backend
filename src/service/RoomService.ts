@@ -80,13 +80,6 @@ export class Room {
         this.users.push({ ...user, power });
     }
 
-    async setTeam(teamName: string) {
-        const { teamId } = await DatabaseService.createTeam({ teamName });
-        for (const user of this.users) {
-            await DatabaseService.updateUserInfo(user.userId, { teamId });
-        }
-    }
-
     addChat(userId: number, text: string) {
         this.chat.push({ userId, text });
     }
