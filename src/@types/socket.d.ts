@@ -18,6 +18,7 @@ type JoinRoomPacket = {
 
 type CreateRoomPacket = {
     userId: number;
+    roomName: string;
 };
 
 type SetTeamPacket = {

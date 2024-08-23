@@ -22,8 +22,6 @@ export namespace RoomService {
     }
 
     export async function deleteRoom(roomId: string) {
-        //roomList.filter((item) => item.roomId != roomId);
-
         roomList.splice(
             roomList.findIndex((item) => item.roomId == roomId),
             1
@@ -51,7 +49,7 @@ export class Room {
     public ready = false;
     chat: { userId: number; text: string }[] = [];
 
-    constructor(game: Game, public roomId: string) {
+    constructor(game: Game, public roomId: string, public roomName: string) {
         this.game = game;
     }
 

@@ -33,7 +33,8 @@ export namespace SocketService {
                     return;
                 }
 
-                RoomService.deleteRoom(roomId);
+                await RoomService.deleteRoom(roomId);
+                socket.broadcast.to(roomId.toString()).emit("DELETEROOM", {});
 
                 callback({ success: true });
             });
@@ -82,18 +83,6 @@ export namespace SocketService {
                 callback({ success: true });
             });
 
-            socket.on("SETTEAM", async ({ userId, roomId, teamName }: SetTeamPacket, callback) => {
-                const room = RoomService.getRoom(roomId);
-                if (!room) return;
-
-                const user = room.getUser(userId);
-                if (!user || user.power !== "leader") return;
-
-                await room.setTeam(teamName);
-
-                callback({ success: true });
-            });
-
             socket.on("JOINROOM", async ({ userId, roomId }: JoinRoomPacket, callback) => {
                 const user = RoomService.getUser(userId);
 
@@ -110,7 +99,7 @@ export namespace SocketService {
                 socket.join(roomId.toString());
             });
 
-            socket.on("CREATEROOM", async ({ userId }: CreateRoomPacket, callback) => {
+            socket.on("CREATEROOM", async ({ userId, roomName }: CreateRoomPacket, callback) => {
                 const user = RoomService.getUser(userId);
 
                 if (!user) {
@@ -123,7 +112,8 @@ export namespace SocketService {
 
                 game.addUser(user);
 
-                const room = new Room(game, roomId);
+                const room = new Room(game, roomId, roomName);
+                await room.setTeam(roomName);
 
                 RoomService.addRoom(room);
                 room.addUser(user, "leader");
