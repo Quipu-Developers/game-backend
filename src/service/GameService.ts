@@ -1,5 +1,74 @@
 import { Vars } from "../Vars";
-import { GameWords } from "src/constants";
+import { GameWords } from "../constants";
+import { ChatSession, GoogleGenerativeAI } from "@google/generative-ai";
+
+const configuration = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+
+const modelGemini = configuration.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+const functionDeclarations: any = [
+    {
+        name: "get_words",
+        description: "단어를 가져오라하면 호출해야 하는 함수 words에 무작위 한국어 단어 여러개를 넣어서 보내면 된다.",
+        parameters: {
+            type: "OBJECT",
+            description: `단어 여러개`,
+            properties: {
+                words: {
+                    type: "ARRAY",
+                    description: "단어 여러개",
+                    items: {
+                        description: "단어 여러개",
+                        type: "STRING",
+                    },
+                },
+            },
+            required: ["words"],
+        },
+    },
+];
+
+const generationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
+    maxOutputTokens: 8192,
+    responseMimeType: "text/plain",
+};
+
+let chat: ChatSession = modelGemini.startChat({
+    history: [],
+    generationConfig: {
+        ...generationConfig,
+        maxOutputTokens: 4000,
+    },
+    tools: [
+        {
+            functionDeclarations,
+        },
+    ],
+});
+
+async function getWords(): Promise<string[]> {
+    const result = await chat.sendMessage("단어 84개를 가져와줘");
+
+    const response = result.response;
+    const functions = result.response.functionCalls();
+
+    console.log(response.text());
+
+    if (functions && functions[0].name == "get_words") {
+        console.log(functions[0]);
+        return (functions[0].args as any).words;
+    }
+
+    return [];
+}
+
+(async () => {
+    const words = await getWords();
+    console.log(words);
+})();
 
 export class Game {
     public users: DefaultGameUserInfo[] = [];
@@ -30,7 +99,7 @@ export class Game {
         this.users.splice(this.users.indexOf(user), 1);
     }
 
-    public word(userId: number, word: string) {
+    public async word(userId: number, word: string) {
         const user = this.getUser(userId);
         if (!user) return false;
 
@@ -40,8 +109,10 @@ export class Game {
         user.score += 10;
 
         if (this.words.length == 0) {
-            this.endGame();
+            this.words = await getWords();
+            Vars.io.to(this.roomId.toString()).emit("NEWWORDS", { words: this.words });
         }
+
         return true;
     }
 

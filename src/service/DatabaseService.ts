@@ -1,5 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { Vars } from "src/Vars";
+import { Vars } from "../Vars";
 
 export namespace DatabaseService {
     export async function getGameEndInfo(userId: number) {

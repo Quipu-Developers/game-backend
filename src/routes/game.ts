@@ -1,4 +1,4 @@
-import { DatabaseService } from "src/service";
+import { DatabaseService } from "../service";
 import { Util } from "../util";
 import { Router } from "express";
 

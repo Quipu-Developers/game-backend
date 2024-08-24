@@ -1,4 +1,3 @@
-import { DatabaseService } from "./DatabaseService";
 import { Game } from "./GameService";
 
 export namespace RoomService {
@@ -54,8 +53,6 @@ export class Room {
 
     kickMember(userId: number) {
         this.users = this.users.filter((item) => item.userId != userId);
-
-        // this.users.splice(this.users.findIndex((v)=>v.userId == userId) , 1)
     }
 
     get leader() {

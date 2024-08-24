@@ -6,6 +6,7 @@ declare global {
             SQL_USER: string;
             SQL_PASSWD: string;
             SQL_DBNAME: string;
+            GOOGLE_AI_API_KEY: string;
         }
     }
 }
