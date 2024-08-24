@@ -2,65 +2,65 @@ import { Vars } from "../Vars";
 import { GameWords } from "../constants";
 import { ChatSession, GoogleGenerativeAI } from "@google/generative-ai";
 
-const configuration = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+// const configuration = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 
-const modelGemini = configuration.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+// const modelGemini = configuration.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-const functionDeclarations: any = [
-    {
-        name: "get_words",
-        description: "단어를 가져오라하면 호출해야 하는 함수 words에 무작위 한국어 단어 여러개를 넣어서 보내면 된다.",
-        parameters: {
-            type: "OBJECT",
-            description: `단어 여러개`,
-            properties: {
-                words: {
-                    type: "ARRAY",
-                    description: "단어 여러개",
-                    items: {
-                        description: "단어 여러개",
-                        type: "STRING",
-                    },
-                },
-            },
-            required: ["words"],
-        },
-    },
-];
+// const functionDeclarations: any = [
+//     {
+//         name: "get_words",
+//         description: "단어를 가져오라하면 호출해야 하는 함수 words에 무작위 한국어 단어 여러개를 넣어서 보내면 된다.",
+//         parameters: {
+//             type: "OBJECT",
+//             description: `단어 여러개`,
+//             properties: {
+//                 words: {
+//                     type: "ARRAY",
+//                     description: "단어 여러개",
+//                     items: {
+//                         description: "단어 여러개",
+//                         type: "STRING",
+//                     },
+//                 },
+//             },
+//             required: ["words"],
+//         },
+//     },
+// ];
 
-const generationConfig = {
-    temperature: 1,
-    topP: 0.95,
-    topK: 64,
-    maxOutputTokens: 8192,
-    responseMimeType: "text/plain",
-};
+// const generationConfig = {
+//     temperature: 1,
+//     topP: 0.95,
+//     topK: 64,
+//     maxOutputTokens: 8192,
+//     responseMimeType: "text/plain",
+// };
 
-let chat: ChatSession = modelGemini.startChat({
-    history: [],
-    generationConfig: {
-        ...generationConfig,
-        maxOutputTokens: 4000,
-    },
-    tools: [
-        {
-            functionDeclarations,
-        },
-    ],
-});
+// let chat: ChatSession = modelGemini.startChat({
+//     history: [],
+//     generationConfig: {
+//         ...generationConfig,
+//         maxOutputTokens: 4000,
+//     },
+//     tools: [
+//         {
+//             functionDeclarations,
+//         },
+//     ],
+// });
 
 async function getWords(): Promise<string[]> {
-    const result = await chat.sendMessage("단어 84개를 가져와줘");
+    // const result = await chat.sendMessage("단어 84개를 가져와줘");
 
-    const response = result.response;
-    const functions = result.response.functionCalls();
+    // const response = result.response;
+    // const functions = result.response.functionCalls();
 
-    console.log(response.text());
+    // console.log(response.text());
 
-    if (functions && functions[0].name == "get_words") {
-        console.log(functions[0]);
-        return (functions[0].args as any).words;
-    }
+    // if (functions && functions[0].name == "get_words") {
+    //     console.log(functions[0]);
+    //     return (functions[0].args as any).words;
+    // }
 
     return [];
 }
