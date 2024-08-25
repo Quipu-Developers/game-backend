@@ -7,4 +7,5 @@ config();
 (async () => {
     await Vars.initialize();
     await SocketService.initialize();
+    await Vars.initializeGemini();
 })();

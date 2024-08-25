@@ -1,5 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { Vars } from "src/Vars";
+import { Vars } from "./../Vars";
 
 export namespace DatabaseService {
     export async function getGameEndInfo(userId: number) {
@@ -141,7 +141,54 @@ export namespace DatabaseService {
 
     export async function existUser(userId: number) {}
 
-    export async function getWords() {
-        return ["바나나", "사과나", "딸기야"];
+    export async function getWords(num: number) {
+        await Vars.initializeGemini();
+        const history = [
+            { role: "user", parts: "한글 단어를 생성해야해 근데 다음 조건들을 만족시켜야해" },
+            { role: "user", parts: "1. 3글자로 이루어진 한글 단어이어야해" },
+            { role: "user", parts: "2. 사전에 있는 단어일수록 좋아" },
+        ];
+
+        const chat = Vars.model.startChat({
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: "한글 단어를 생성해야해 근데 다음 조건들을 만족시켜야해" }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "한글 단어 생성 조건을 알려주세요!" }],
+                },
+                {
+                    role: "user",
+                    parts: [{ text: "1. 3글자로 이루어진 한글 단어이어야해" }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "좀 더 구체적인 조건을 알려주시면 더욱 멋진 단어를 만들어 드릴 수 있습니다." }],
+                },
+                {
+                    role: "user",
+                    parts: [{ text: "2. 사전에 있는 단어일수록 좋아" }],
+                },
+                {
+                    role: "model",
+                    parts: [
+                        {
+                            text: "어떤 분위기의 단어를 원하시는지 알려주시면 더욱 딱 맞는 단어를 찾아드릴 수 있습니다.",
+                        },
+                    ],
+                },
+            ],
+        });
+
+        const result: string = (
+            await chat.sendMessage(`위 조건을 만족시키는 단어 ${num}개를 json 형식으로 출력해줘`)
+        ).response.text();
+
+        const arr: string[] = JSON.parse(result);
+        //console.log(result.response.text());
+
+        return arr;
     }
 }
