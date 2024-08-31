@@ -2,10 +2,21 @@ import { Game } from "./GameService";
 
 export namespace RoomService {
     const roomList: Room[] = [];
-    export const users: DefaultGameUserInfo[] = [];
+    export const users: (DefaultGameUserInfo & { roomId?: string })[] = [];
 
-    export function getUser(userId: number) {
+    export function getUser(userId?: number) {
         return users.find((v) => v.userId == userId);
+    }
+
+    export function getRoomFromUserId(userId?: number) {
+        const user = getUser(userId);
+        if (!user) return;
+
+        return roomList.find((room) => room.roomId == user.roomId);
+    }
+
+    export async function addUser(user: DefaultGameUserInfo) {
+        users.push(user);
     }
 
     export function getRoom(roomId: string) {
@@ -27,11 +38,14 @@ export namespace RoomService {
         );
     }
 
-    export async function joinRoom(user: DefaultGameUserInfo, roomId: string) {
-        const room = getRoom(roomId);
+    export async function joinRoom(userId: number, roomId: string) {
+        const user = getUser(userId);
+        if (!user) return false;
 
+        const room = getRoom(roomId);
         if (!room) return false;
 
+        user.roomId = room.roomId;
         room.addUser(user, "normal");
     }
 }
@@ -69,7 +83,7 @@ export class Room {
         return this.game;
     }
 
-    getUser(userId: number) {
+    getUser(userId?: number) {
         return this.users.find((v) => v.userId == userId);
     }
 

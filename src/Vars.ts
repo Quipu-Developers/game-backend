@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { createPool } from "mysql2/promise";
 import cors from "cors";
 import "dotenv/config";
+import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
 
 export namespace Vars {
     const port = 8080;
@@ -43,6 +44,18 @@ export namespace Vars {
         multipleStatements: true,
         connectionLimit: 3,
     });
+
+    export let model: GenerativeModel;
+
+    export async function initializeGemini() {
+        const Gemini = new GoogleGenerativeAI(process.env.KRDICT_API_KEY);
+        model = Gemini.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            generationConfig: {
+                responseMimeType: "application/json",
+            },
+        });
+    }
 
     export async function initialize() {
         server.listen({ port, host: "0.0.0.0" }, () => console.log("listening on port " + port));

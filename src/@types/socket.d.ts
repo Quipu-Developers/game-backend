@@ -1,5 +1,5 @@
 type SessionPacket = {
-    userInfo: Omit<DefaultGameUserInfo, "score">;
+    userId: number;
 };
 
 type GameIdPacket = {
