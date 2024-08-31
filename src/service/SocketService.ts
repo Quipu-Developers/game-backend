@@ -55,6 +55,15 @@ export namespace SocketService {
                 callback(result);
             });
 
+            socket.on("DELETEUSER", async ({}, callback) => {
+                const user = LobbyService.getUser(socket.userId);
+                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
+
+                const deleted = DatabaseService.deleteUserInfo(user.userId);
+
+                return callback({ success: deleted });
+            });
+
             socket.on("DELETEROOM", async ({}, callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
