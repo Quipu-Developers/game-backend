@@ -1,4 +1,5 @@
 import { Game } from "./GameService";
+import { v4 as uuidv4 } from "uuid";
 
 export namespace LobbyService {
     const roomList: Room[] = [];
@@ -35,8 +36,18 @@ export namespace LobbyService {
         return roomList;
     }
 
-    export async function addRoom(room: Room) {
+    export function createRoom(creator: LobbyUserInfo, roomName: string) {
+        const roomId = uuidv4();
+        const game = new Game(roomId);
+        game.addUser(creator);
+
+        const room = new Room(game, roomId, roomName);
         roomList.push(room);
+        room.addUser(creator, "leader");
+
+        creator.roomId = room.roomId;
+
+        return room;
     }
 
     export async function deleteRoom(room: Room) {

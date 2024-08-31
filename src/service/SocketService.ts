@@ -1,5 +1,5 @@
 import { Vars } from "../Vars";
-import { v4 as uuidv4 } from "uuid";
+
 import { Game } from "./GameService";
 import { DatabaseService } from "./DatabaseService";
 import { Room, LobbyService } from "./RoomService";
@@ -18,7 +18,7 @@ export namespace SocketService {
                 LobbyService.deleteUser(socket.userId);
 
                 if (socket.rooms.has("lobby")) {
-                    Vars.io.emit("LEAVELOBBY", socket.userId);
+                    Vars.io.emit("LEAVELOBBY", { userId: socket.userId });
                 }
 
                 const room = LobbyService.getRoomFromUserId(socket.userId);
@@ -29,20 +29,21 @@ export namespace SocketService {
                 }
             });
 
-            socket.on("LOGIN", async ({ userName, phoneNumber }: AuthPacket, callback) => {
+            socket.on("LOGIN", async ({ userName, phoneNumber }: RequestList["LOGIN"], callback) => {
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
-                if (!result.success) return callback(result);
-                if (LobbyService.getUser(result.user?.userId)) {
+                if (!result.success)
+                    return callback({ success: false, errMsg: "해당 정보의 유저정보가 존재하지 않습니다." });
+                if (LobbyService.getUser(result.user?.userId))
                     return callback({ success: false, errMsg: "이미 해당 정보로 로그인한 유저가 존재합니다." });
-                }
+
                 LobbyService.addUser(result.user!);
                 socket.userId = result.user?.userId;
                 await socket.join("lobby");
-                Vars.io.to("lobby").emit("JOINLOBBY", result.user);
+                Vars.io.to("lobby").emit("JOINLOBBY", { user: result.user });
                 callback(result);
             });
 
-            socket.on("REGISTER", async ({ userName, phoneNumber }: AuthPacket, callback) => {
+            socket.on("REGISTER", async ({ userName, phoneNumber }: RequestList["REGISTER"], callback) => {
                 const result = await DatabaseService.createUser({ userName, phoneNumber });
                 if (result.success) {
                     LobbyService.lobbyUsers.push({
@@ -55,7 +56,7 @@ export namespace SocketService {
                 callback(result);
             });
 
-            socket.on("DELETEUSER", async ({}, callback) => {
+            socket.on("DELETEUSER", async ({}: RequestList["DELETEUSER"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
 
@@ -64,7 +65,7 @@ export namespace SocketService {
                 return callback({ success: deleted });
             });
 
-            socket.on("DELETEROOM", async ({}, callback) => {
+            socket.on("DELETEROOM", async ({}: RequestList["DELETEROOM"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
@@ -74,11 +75,11 @@ export namespace SocketService {
 
                 await LobbyService.deleteRoom(room);
                 socket.broadcast.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
-                socket.broadcast.to(room.roomId.toString()).emit("DELETEROOM", {});
+                socket.broadcast.to(room.roomId.toString()).emit("DELETEROOM", { roomId: room.roomId });
                 callback({ success: true });
             });
 
-            socket.on("KICKMEMBER", async ({ targetId }: { targetId: number }, callback) => {
+            socket.on("KICKMEMBER", async ({ targetId }: RequestList["KICKMEMBER"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
@@ -90,7 +91,7 @@ export namespace SocketService {
                 callback({ success: deleted });
             });
 
-            socket.on("GETROOMS", async ({}, callback) => {
+            socket.on("GETROOMS", async ({}: RequestList["GETROOMS"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const rooms = LobbyService.getRooms();
@@ -105,7 +106,7 @@ export namespace SocketService {
                 });
             });
 
-            socket.on("STARTGAME", async ({}, callback) => {
+            socket.on("STARTGAME", async ({}: RequestList["STARTGAME"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
@@ -119,44 +120,39 @@ export namespace SocketService {
                 Vars.io.to(room.roomId.toString()).emit("STARTGAME", { gameInfo: room.getGame().getGameInfo() });
             });
 
-            socket.on("LEAVEROOM", async ({}, callback) => {
+            socket.on("LEAVEROOM", async ({}: RequestList["LEAVEROOM"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
 
                 socket.broadcast.to("lobby").emit("LEAVEUSER", { user, roomId: room.roomId });
-                socket.broadcast.to(room.roomId.toString()).emit("LEAVEUSER", user);
+                socket.broadcast.to(room.roomId.toString()).emit("LEAVEUSER", { user, roomId: room.roomId });
             });
 
-            socket.on("JOINROOM", async ({}, callback) => {
+            socket.on("JOINROOM", async ({ roomId }: RequestList["JOINROOM"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
-                const room = LobbyService.getRoomFromUserId(user.userId);
+                const room = LobbyService.getRoom(roomId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
 
                 LobbyService.joinRoom(user, room);
                 const users = room.getUsers();
                 callback({ success: true, users: users });
-                socket.broadcast.to(room.roomId.toString()).emit("JOINUSER", user);
+                socket.broadcast.to(room.roomId).emit("JOINUSER", { user, roomId: room.roomId });
                 socket.leave("lobby");
-                socket.join(room.roomId.toString());
+                socket.join(room.roomId);
                 socket.broadcast.to("lobby").emit("JOINUSER", { user, roomId: room.roomId });
             });
 
-            socket.on("CREATEROOM", async ({ roomName }: { roomName: string }, callback) => {
+            socket.on("CREATEROOM", async ({ roomName }: RequestList["CREATEROOM"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
 
-                const roomId = uuidv4();
-                const game = new Game(roomId);
-                game.addUser(user);
-
-                const room = new Room(game, roomId, roomName);
-                LobbyService.addRoom(room);
-                room.addUser(user, "leader");
+                const room = LobbyService.createRoom(user, roomName);
 
                 socket.leave("lobby");
+                socket.join(room.roomId);
                 callback({ success: true, room });
 
                 Vars.io.to("lobby").emit("CREATEROOM", {
@@ -167,7 +163,7 @@ export namespace SocketService {
                 });
             });
 
-            socket.on("CHAT", ({ message }: { message: string }, callback) => {
+            socket.on("CHAT", ({ message }: RequestList["CHAT"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
@@ -176,7 +172,7 @@ export namespace SocketService {
                 socket.broadcast.to(room.roomId).emit("CHAT", { userName: user.userName, message });
             });
 
-            socket.on("WORD", ({ word }: { word: string }, callback) => {
+            socket.on("WORD", ({ word }: RequestList["WORD"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
