@@ -1,5 +1,5 @@
+import { DatabaseService } from "../service";
 import { Util } from "../util";
-import { GameService } from "../service";
 import { Router } from "express";
 
 const gameRouter = Router();
@@ -7,7 +7,7 @@ const gameRouter = Router();
 gameRouter.get("/game-end", async (req, res) => {
     const userId = req.query.userId;
     if (typeof userId !== "number") throw new Error("userId must be number");
-    const gameEndInfo = await GameService.getGameEndInfo(userId);
+    const gameEndInfo = await DatabaseService.getGameEndInfo(userId);
     if (!gameEndInfo) throw new Error("gameUser is not found");
 
     return res.json(gameEndInfo);
@@ -18,7 +18,7 @@ gameRouter.post("/create-user", async (req, res) => {
 
     if (!Util.phoneNumberValidator(phoneNumber)) throw new Error("phoneNumber invalid");
 
-    const { userId } = await GameService.createUser({
+    const { userId } = await DatabaseService.createUser({
         userName,
         phoneNumber,
     });
@@ -29,7 +29,7 @@ gameRouter.post("/create-user", async (req, res) => {
 gameRouter.post("/delete-user", async (req, res) => {
     const { userId } = req.body;
 
-    const success = await GameService.deleteUserInfo(userId);
+    const success = await DatabaseService.deleteUserInfo(userId);
 
     return res.json({ success });
 });
@@ -37,7 +37,7 @@ gameRouter.post("/delete-user", async (req, res) => {
 gameRouter.post("/update-user", async (req, res) => {
     const { userId, info } = req.body;
 
-    const success = await GameService.updateUserInfo(userId, info);
+    const success = await DatabaseService.updateUserInfo(userId, info);
 
     return res.json({ success });
 });
