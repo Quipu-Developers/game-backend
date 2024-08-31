@@ -1,11 +1,19 @@
 import { Game } from "./GameService";
 
-export namespace RoomService {
+export namespace LobbyService {
     const roomList: Room[] = [];
-    export const users: (DefaultGameUserInfo & { roomId?: string })[] = [];
+    export const lobbyUsers: LobbyUserInfo[] = [];
 
     export function getUser(userId?: number) {
-        return users.find((v) => v.userId == userId);
+        return lobbyUsers.find((v) => v.userId == userId);
+    }
+
+    export function deleteUser(userId?: number) {
+        const deleted = lobbyUsers.splice(
+            lobbyUsers.findIndex((user) => user.userId == userId),
+            1
+        );
+        return deleted;
     }
 
     export function getRoomFromUserId(userId?: number) {
@@ -15,8 +23,8 @@ export namespace RoomService {
         return roomList.find((room) => room.roomId == user.roomId);
     }
 
-    export async function addUser(user: DefaultGameUserInfo) {
-        users.push(user);
+    export async function addUser(user: DefaultUserInfo) {
+        lobbyUsers.push(user);
     }
 
     export function getRoom(roomId: string) {
@@ -31,64 +39,56 @@ export namespace RoomService {
         roomList.push(room);
     }
 
-    export async function deleteRoom(roomId: string) {
+    export async function deleteRoom(room: Room) {
         roomList.splice(
-            roomList.findIndex((item) => item.roomId == roomId),
+            roomList.findIndex((item) => item.roomId == room.roomId),
             1
         );
     }
 
-    export async function joinRoom(userId: number, roomId: string) {
-        const user = getUser(userId);
-        if (!user) return false;
-
-        const room = getRoom(roomId);
-        if (!room) return false;
-
+    export async function joinRoom(user: LobbyUserInfo, room: Room) {
         user.roomId = room.roomId;
         room.addUser(user, "normal");
     }
 }
 
-type RoomPower = "leader" | "normal";
-
-type RoomUserInfo = DefaultGameUserInfo & {
-    power: RoomPower;
-};
-
 export class Room {
     private users: RoomUserInfo[] = [];
     private game: Game;
-    chat: { userId: number; text: string }[] = [];
+    public chat: { userId: number; text: string }[] = [];
 
     constructor(game: Game, public roomId: string, public roomName: string) {
         this.game = game;
     }
 
-    kickMember(userId: number) {
-        this.users = this.users.filter((item) => item.userId != userId);
+    public kickMember(userId: number) {
+        const deleted = this.users.splice(
+            this.users.findIndex((user) => user.userId == userId),
+            1
+        );
+        return deleted.length > 0;
     }
 
-    get leader() {
+    public get leader() {
         const leader = this.users.find((v) => v.power == "leader");
         if (!leader) throw new Error("can't find leader");
         return leader;
     }
 
-    getUsers() {
+    public getUsers() {
         return this.users;
     }
 
-    getGame() {
+    public getGame() {
         return this.game;
     }
 
-    getUser(userId?: number) {
+    private getUser(userId?: number) {
         return this.users.find((v) => v.userId == userId);
     }
 
-    addUser(user: DefaultGameUserInfo, power: RoomPower) {
-        this.users.push({ ...user, power });
+    addUser(user: DefaultUserInfo, power: RoomPower) {
+        this.users.push({ ...user, roomId: this.roomId, power });
     }
 
     addChat(userId: number, text: string) {

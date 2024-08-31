@@ -3,7 +3,7 @@ import { GameWords } from "../constants";
 import { DatabaseService } from "./DatabaseService";
 
 export class Game {
-    public users: DefaultGameUserInfo[] = [];
+    public users: DefaultUserInfo[] = [];
     public words: string[] = GameWords;
     public isStarted = false;
     public startTime?: number;
@@ -23,11 +23,11 @@ export class Game {
         return this.users.find((user) => user.userId == userId);
     }
 
-    public addUser(user: DefaultGameUserInfo) {
+    public addUser(user: DefaultUserInfo) {
         this.users.push(user);
     }
 
-    public removeUser(user: DefaultGameUserInfo) {
+    public removeUser(user: DefaultUserInfo) {
         this.users.splice(this.users.indexOf(user), 1);
     }
 
@@ -48,11 +48,9 @@ export class Game {
         return true;
     }
 
-    public async startGame() {
+    public startGame() {
         this.isStarted = true;
         this.startTime = Date.now();
-
-        Vars.io.to(this.roomId.toString()).emit("STARTGAME", { gameInfo: this.getGameInfo() });
     }
 
     public async endGame() {

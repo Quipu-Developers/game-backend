@@ -92,7 +92,7 @@ export namespace DatabaseService {
         return { success: true, userId };
     }
 
-    export async function updateUserInfo(userId: number, info: Partial<DefaultGameUserInfo>) {
+    export async function updateUserInfo(userId: number, info: Partial<DefaultUserInfo>) {
         const conn = await Vars.sql.getConnection();
 
         conn.query<RowDataPacket[]>(
