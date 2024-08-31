@@ -3,6 +3,5 @@ interface DefaultGameUserInfo {
     teamId: number;
     teamName: string;
     score: number;
-    userName: string;
-    phoneNumber: string;
 }
+

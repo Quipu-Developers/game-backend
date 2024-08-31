@@ -1,74 +1,7 @@
 import { Vars } from "../Vars";
 import { GameWords } from "../constants";
-import { ChatSession, GoogleGenerativeAI } from "@google/generative-ai";
-
-// const configuration = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-
-// const modelGemini = configuration.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-
-// const functionDeclarations: any = [
-//     {
-//         name: "get_words",
-//         description: "단어를 가져오라하면 호출해야 하는 함수 words에 무작위 한국어 단어 여러개를 넣어서 보내면 된다.",
-//         parameters: {
-//             type: "OBJECT",
-//             description: `단어 여러개`,
-//             properties: {
-//                 words: {
-//                     type: "ARRAY",
-//                     description: "단어 여러개",
-//                     items: {
-//                         description: "단어 여러개",
-//                         type: "STRING",
-//                     },
-//                 },
-//             },
-//             required: ["words"],
-//         },
-//     },
-// ];
-
-// const generationConfig = {
-//     temperature: 1,
-//     topP: 0.95,
-//     topK: 64,
-//     maxOutputTokens: 8192,
-//     responseMimeType: "text/plain",
-// };
-
-// let chat: ChatSession = modelGemini.startChat({
-//     history: [],
-//     generationConfig: {
-//         ...generationConfig,
-//         maxOutputTokens: 4000,
-//     },
-//     tools: [
-//         {
-//             functionDeclarations,
-//         },
-//     ],
-// });
-
-async function getWords(): Promise<string[]> {
-    // const result = await chat.sendMessage("단어 84개를 가져와줘");
-
-    // const response = result.response;
-    // const functions = result.response.functionCalls();
-
-    // console.log(response.text());
-
-    // if (functions && functions[0].name == "get_words") {
-    //     console.log(functions[0]);
-    //     return (functions[0].args as any).words;
-    // }
-
-    return [];
-}
-
-(async () => {
-    const words = await getWords();
-    console.log(words);
-})();
+import { Room, RoomService } from "./RoomService";
+import { DatabaseService } from "./DatabaseService";
 
 export class Game {
     public users: DefaultGameUserInfo[] = [];
@@ -99,7 +32,7 @@ export class Game {
         this.users.splice(this.users.indexOf(user), 1);
     }
 
-    public async word(userId: number, word: string) {
+    public word(userId: number, word: string) {
         const user = this.getUser(userId);
         if (!user) return false;
 
@@ -109,10 +42,8 @@ export class Game {
         user.score += 10;
 
         if (this.words.length == 0) {
-            this.words = await getWords();
-            Vars.io.to(this.roomId.toString()).emit("NEWWORDS", { words: this.words });
+            this.endGame();
         }
-
         return true;
     }
 
@@ -125,10 +56,21 @@ export class Game {
 
     public async endGame() {
         if (!this.startTime) throw new Error("can't end game without startTime");
+        const timeScore = Math.floor((Date.now() - this.startTime) / 1000) * 10;
 
         clearTimeout(this.timer);
 
-        Vars.io.to(this.roomId).emit("ENDGAME", { users: this.users });
+        let totalScore = 0;
+
+        totalScore += timeScore;
+
+        for (const user of this.users) {
+            totalScore += user.score;
+        }
+
+        await DatabaseService.updateTeamInfo(RoomService.getRoom(this.roomId)!.leader.teamId, { score: totalScore });
+
+        Vars.io.to(this.roomId).emit("ENDGAME", { timeScore, totalScore });
         const sockets = await Vars.io.sockets.in(this.roomId).fetchSockets();
 
         for (const socket of sockets) {
