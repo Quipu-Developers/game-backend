@@ -8,16 +8,10 @@ export namespace DatabaseService {
             "SELECT * FROM Users WHERE userName NOT IN ('관리자1', '관리자2', '관리자3') ORDER BY score DESC;"
         );
 
-        //"SELECT * FROM Users where userName not in ((?)) ORDER BY score DESC;"
-        //const [teamList] = await conn.query<RowDataPacket[]>(`SELECT * FROM Teams ORDER BY remainingTime ASC`);
         conn.release();
-        console.log(personalList);
         const personalIndex = personalList.findIndex((item) => item.userId === userId);
         const teamId = personalList[personalIndex].teamId;
 
-        //const teamIndex = teamList.findIndex((item) => item.teamId === teamId);
-
-        /** 추후에 순위 중복문제 해결 예정 */
         return {
             personalRank: {
                 rank: personalIndex + 1,
@@ -29,14 +23,10 @@ export namespace DatabaseService {
         };
     }
 
-    const manager = ["관리자1", "관리자2", "관리자3"];
-
     export async function getGameEndInfoRanks(userId: number) {
         const conn = await Vars.sql.getConnection();
         const [list] = await conn.query<RowDataPacket[]>("SELECT * FROM Users ORDER BY score DESC;");
         conn.release();
-
-        //추후에 순위 중복문제 해결 예정
 
         const index: number = list.findIndex((item) => item.userId === userId);
         const userName: string = `${list[index].userName}`;

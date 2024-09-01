@@ -22,19 +22,6 @@ export namespace Vars {
     const server = createServer(app);
     export const io = new Server(server, { cors: { origin: "*" } });
 
-    export function checkenv() {
-        const DBinfo = {
-            host: process.env.SQL_HOST,
-            port: 3306,
-            user: process.env.SQL_USER,
-            password: process.env.SQL_PASSWD,
-            database: process.env.SQL_DBNAME,
-            multipleStatements: true,
-            connectionLimit: 3,
-        };
-        console.log(DBinfo);
-    }
-
     export const sql = createPool({
         host: process.env.SQL_HOST,
         port: 3306,
@@ -59,7 +46,5 @@ export namespace Vars {
 
     export async function initialize() {
         server.listen({ port, host: "0.0.0.0" }, () => console.log("listening on port " + port));
-
-        checkenv();
     }
 }

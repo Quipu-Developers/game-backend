@@ -1,8 +1,7 @@
+import { Util } from "src/util";
 import { Vars } from "../Vars";
-
-import { Game } from "./GameService";
 import { DatabaseService } from "./DatabaseService";
-import { Room, LobbyService } from "./RoomService";
+import { LobbyService } from "./RoomService";
 
 export namespace SocketService {
     export async function initialize() {
@@ -15,22 +14,27 @@ export namespace SocketService {
                 console.log("socket disconnected : ", reason);
 
                 if (!socket.userId) return;
-                LobbyService.deleteUser(socket.userId);
 
                 if (socket.rooms.has("lobby")) {
                     Vars.io.emit("LEAVELOBBY", { userId: socket.userId });
                 }
 
                 const room = LobbyService.getRoomFromUserId(socket.userId);
-                if (room) {
+                if (room && room.leader.userId == socket.userId) {
                     await LobbyService.deleteRoom(room);
                     socket.broadcast.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
                     socket.broadcast.to(room.roomId.toString()).emit("DELETEROOM", {});
                 }
+                LobbyService.deleteUser(socket.userId);
             });
 
             socket.on("LOGIN", async ({ userName, phoneNumber }: RequestList["LOGIN"], callback) => {
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
+                const userNameValid = Util.userNameValidator(userName);
+                if (!userNameValid.success) return callback(userNameValid);
+                const phoneNumberValid = Util.phoneNumberValidator(userName);
+                if (!phoneNumberValid.success) return callback(phoneNumberValid);
+
                 if (!result.success)
                     return callback({ success: false, errMsg: "해당 정보의 유저정보가 존재하지 않습니다." });
                 if (LobbyService.getUser(result.user?.userId))
