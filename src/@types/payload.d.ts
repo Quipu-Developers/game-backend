@@ -33,3 +33,16 @@ type ResponseList = {
     NEWWORDS: { words: string[] };
     ENDGAME: { users: DefaultUserInfo[] };
 };
+
+type CallbackSuccess = {
+    readonly success: true;
+};
+
+type CallbackFailed = {
+    readonly success: false;
+    readonly errMsg: string;
+};
+
+type CallbackResponse<T = {}> = (CallbackSuccess & T) | CallbackFailed;
+
+type TestType = { result: 1 } & {};
