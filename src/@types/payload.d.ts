@@ -44,5 +44,3 @@ type CallbackFailed = {
 };
 
 type CallbackResponse<T = {}> = (CallbackSuccess & T) | CallbackFailed;
-
-type TestType = { result: 1 } & {};

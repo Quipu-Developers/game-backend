@@ -1,4 +1,4 @@
-import { Util } from "src/util";
+import { Util } from "../util";
 import { Vars } from "../Vars";
 import { DatabaseService } from "./DatabaseService";
 import { LobbyService } from "./RoomService";
