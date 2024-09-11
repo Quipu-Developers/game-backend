@@ -5,10 +5,10 @@ import { Router } from "express";
 const gameRouter = Router();
 
 gameRouter.get("/game-end", async (req, res) => {
-    const userId = req.query.userId;
-    if (typeof userId !== "number") throw new Error("userId must be number");
+    const userId = +req.query.userId!;
+    if (Number.isNaN(userId)) return res.status(500).send("userId must be number");
     const gameEndInfo = await DatabaseService.getGameEndInfo(userId);
-    if (!gameEndInfo) throw new Error("gameUser is not found");
+    if (!gameEndInfo.success) return res.status(500).send("gameUser is not found");
 
     return res.json(gameEndInfo);
 });

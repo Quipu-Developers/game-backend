@@ -32,7 +32,7 @@ export namespace SocketService {
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
                 const userNameValid = Util.userNameValidator(userName);
                 if (!userNameValid.success) return callback(userNameValid);
-                const phoneNumberValid = Util.phoneNumberValidator(userName);
+                const phoneNumberValid = Util.phoneNumberValidator(phoneNumber);
                 if (!phoneNumberValid.success) return callback(phoneNumberValid);
 
                 if (!result.success)
@@ -48,7 +48,15 @@ export namespace SocketService {
             });
 
             socket.on("REGISTER", async ({ userName, phoneNumber }: RequestList["REGISTER"], callback) => {
+                const userNameValid = Util.userNameValidator(userName);
+                if (!userNameValid.success) return callback(userNameValid);
+                const phoneNumberValid = Util.phoneNumberValidator(phoneNumber);
+                if (!phoneNumberValid.success) return callback(phoneNumberValid);
+
+                if ((await DatabaseService.findUser({ userName, phoneNumber })).success)
+                    return callback({ success: false, errMsg: "계정이 중복됩니다." });
                 const result = await DatabaseService.createUser({ userName, phoneNumber });
+
                 if (result.success) {
                     LobbyService.lobbyUsers.push({
                         userId: result.userId,
@@ -184,7 +192,9 @@ export namespace SocketService {
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
                 const success = room.getGame().word(socket.userId!, word);
-                socket.broadcast.to(room.roomId).emit("WORD", { userId: socket.userId!, success, word });
+                socket.broadcast
+                    .to(room.roomId)
+                    .emit("WORD", { userId: socket.userId!, success, word, gameInfo: room.getGame().getGameInfo() });
             });
         });
     }

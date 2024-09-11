@@ -10,9 +10,15 @@ export namespace DatabaseService {
 
         conn.release();
         const personalIndex = personalList.findIndex((item) => item.userId === userId);
-        const teamId = personalList[personalIndex].teamId;
+
+        if (!personalList[personalIndex])
+            return {
+                success: false,
+                errMsg: "해당 유저를 찾을 수 없습니다.",
+            };
 
         return {
+            success: true,
             personalRank: {
                 rank: personalIndex + 1,
                 userId: userId,
