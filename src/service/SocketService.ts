@@ -130,6 +130,7 @@ export namespace SocketService {
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
 
+                room.getGame().removeUser(user);
                 socket.broadcast.to("lobby").emit("LEAVEUSER", { user, roomId: room.roomId });
                 socket.broadcast.to(room.roomId.toString()).emit("LEAVEUSER", { user, roomId: room.roomId });
             });
@@ -143,6 +144,7 @@ export namespace SocketService {
                 LobbyService.joinRoom(user, room);
                 const users = room.getUsers();
                 callback({ success: true, users: users });
+                room.getGame().addUser(user);
                 socket.broadcast.to(room.roomId).emit("JOINUSER", { user, roomId: room.roomId });
                 socket.leave("lobby");
                 socket.join(room.roomId);

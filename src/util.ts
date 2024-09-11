@@ -13,7 +13,7 @@ export namespace Util {
     export function phoneNumberValidator(phoneNumber: string): CallbackResponse<{ result: string }> {
         if (!phoneNumber || typeof phoneNumber !== "string")
             return { success: false, errMsg: "휴대폰번호는 문자열이여야 합니다." };
-        if (!phoneRule.test(phoneNumber)) return { success: false, errMsg: "전화번호가 올바르지 않습니다." };
+        // if (!phoneRule.test(phoneNumber)) return { success: false, errMsg: "전화번호가 올바르지 않습니다." };
         return { success: true, result: "132" };
     }
 }
