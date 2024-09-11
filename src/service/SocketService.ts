@@ -32,7 +32,7 @@ export namespace SocketService {
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
                 const userNameValid = Util.userNameValidator(userName);
                 if (!userNameValid.success) return callback(userNameValid);
-                const phoneNumberValid = Util.phoneNumberValidator(userName);
+                const phoneNumberValid = Util.phoneNumberValidator(phoneNumber);
                 if (!phoneNumberValid.success) return callback(phoneNumberValid);
 
                 if (!result.success)
@@ -49,6 +49,16 @@ export namespace SocketService {
 
             socket.on("REGISTER", async ({ userName, phoneNumber }: RequestList["REGISTER"], callback) => {
                 const result = await DatabaseService.createUser({ userName, phoneNumber });
+                const userNameValid = Util.userNameValidator(userName);
+                if (!userNameValid.success) return callback(userNameValid);
+                const phoneNumberValid = Util.phoneNumberValidator(phoneNumber);
+                if (!phoneNumberValid.success) return callback(phoneNumberValid);
+
+                // 중복검사
+                //console.log((await DatabaseService.findUser({ userName, phoneNumber })).success);
+                if ((await DatabaseService.findUser({ userName, phoneNumber })).success)
+                    return callback({ success: false, errMsg: "계정이 중복됩니다." });
+
                 if (result.success) {
                     LobbyService.lobbyUsers.push({
                         userId: result.userId,
@@ -143,6 +153,7 @@ export namespace SocketService {
                 LobbyService.joinRoom(user, room);
                 const users = room.getUsers();
                 callback({ success: true, users: users });
+                //console.log(user);
                 socket.broadcast.to(room.roomId).emit("JOINUSER", { user, roomId: room.roomId });
                 socket.leave("lobby");
                 socket.join(room.roomId);
