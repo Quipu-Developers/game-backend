@@ -48,7 +48,6 @@ export namespace SocketService {
             });
 
             socket.on("REGISTER", async ({ userName, phoneNumber }: RequestList["REGISTER"], callback) => {
-                const result = await DatabaseService.createUser({ userName, phoneNumber });
                 const userNameValid = Util.userNameValidator(userName);
                 if (!userNameValid.success) return callback(userNameValid);
                 const phoneNumberValid = Util.phoneNumberValidator(phoneNumber);
@@ -58,7 +57,7 @@ export namespace SocketService {
                 //console.log((await DatabaseService.findUser({ userName, phoneNumber })).success);
                 if ((await DatabaseService.findUser({ userName, phoneNumber })).success)
                     return callback({ success: false, errMsg: "계정이 중복됩니다." });
-
+                const result = await DatabaseService.createUser({ userName, phoneNumber });
                 if (result.success) {
                     LobbyService.lobbyUsers.push({
                         userId: result.userId,
