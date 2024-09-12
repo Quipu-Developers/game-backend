@@ -72,12 +72,15 @@ export class Room {
         this.game = game;
     }
 
-    public kickMember(userId: number) {
+    public removeMember(userId: number) {
         const deleted = this.users.splice(
             this.users.findIndex((user) => user.userId == userId),
             1
         );
         return deleted.length > 0;
+    }
+    public kickMember(userId: number) {
+        return this.removeMember(userId);
     }
 
     public get leader() {
