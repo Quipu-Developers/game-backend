@@ -58,12 +58,12 @@ export namespace SocketService {
                 const result = await DatabaseService.createUser({ userName, phoneNumber });
 
                 if (result.success) {
-                    LobbyService.lobbyUsers.push({
-                        userId: result.userId,
-                        userName,
-                        phoneNumber,
-                        score: 0,
-                    });
+                    //LobbyService.lobbyUsers.push({
+                    //    userId: result.userId,
+                    //    userName,
+                    //    phoneNumber,
+                    //    score: 0,
+                    //});
                 }
                 callback(result);
             });
