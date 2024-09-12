@@ -57,14 +57,6 @@ export namespace SocketService {
                     return callback({ success: false, errMsg: "계정이 중복됩니다." });
                 const result = await DatabaseService.createUser({ userName, phoneNumber });
 
-                if (result.success) {
-                    LobbyService.lobbyUsers.push({
-                        userId: result.userId,
-                        userName,
-                        phoneNumber,
-                        score: 0,
-                    });
-                }
                 callback(result);
             });
 
@@ -88,6 +80,8 @@ export namespace SocketService {
                 await LobbyService.deleteRoom(room);
                 socket.broadcast.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
                 socket.broadcast.to(room.roomId.toString()).emit("DELETEROOM", { roomId: room.roomId });
+                await socket.leave(room.roomId.toString());
+                await socket.join("lobby");
                 callback({ success: true });
             });
 
@@ -141,6 +135,9 @@ export namespace SocketService {
                 room.getGame().removeUser(user);
                 socket.broadcast.to("lobby").emit("LEAVEUSER", { user, roomId: room.roomId });
                 socket.broadcast.to(room.roomId.toString()).emit("LEAVEUSER", { user, roomId: room.roomId });
+                await socket.leave(room.roomId.toString());
+                await socket.join("lobby");
+                callback({ success: true });
             });
 
             socket.on("JOINROOM", async ({ roomId }: RequestList["JOINROOM"], callback) => {
@@ -186,12 +183,12 @@ export namespace SocketService {
                 socket.broadcast.to(room.roomId).emit("CHAT", { userName: user.userName, message });
             });
 
-            socket.on("WORD", ({ word }: RequestList["WORD"], callback) => {
+            socket.on("WORD", async ({ word }: RequestList["WORD"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
-                const success = room.getGame().word(socket.userId!, word);
+                const success = await room.getGame().word(socket.userId!, word);
                 socket.broadcast
                     .to(room.roomId)
                     .emit("WORD", { userId: socket.userId!, success, word, gameInfo: room.getGame().getGameInfo() });
