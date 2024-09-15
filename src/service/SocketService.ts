@@ -122,7 +122,7 @@ export namespace SocketService {
                     return callback({ success: false, errMsg: "리더만 게임을 시작할수 있습니다." });
                 room.getGame().startGame();
 
-                callback({ success: true });
+                callback({ success: true, gameInfo: room.getGame().getGameInfo() });
                 Vars.io.to(room.roomId.toString()).emit("STARTGAME", { gameInfo: room.getGame().getGameInfo() });
             });
 
@@ -186,13 +186,24 @@ export namespace SocketService {
 
             socket.on("WORD", async ({ word }: RequestList["WORD"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
-                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
+                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을 수 없습니다." });
+
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
+
                 const success = await room.getGame().word(socket.userId!, word);
-                socket.broadcast
-                    .to(room.roomId)
-                    .emit("WORD", { userId: socket.userId!, success, word, gameInfo: room.getGame().getGameInfo() });
+                if (success) {
+                    socket.broadcast.to(room.roomId).emit("WORD", {
+                        userId: socket.userId,
+                        success,
+                        word,
+                        gameInfo: room.getGame().getGameInfo(),
+                    });
+
+                    callback({ success: true, gameInfo: room.getGame().getGameInfo() });
+                } else {
+                    callback({ success: false });
+                }
             });
         });
     }
