@@ -15,36 +15,108 @@ export namespace SocketService {
 
                 if (!socket.userId) return;
 
-                if (socket.rooms.has("lobby")) {
-                    Vars.io.emit("LEAVELOBBY", { userId: socket.userId });
-                }
+                setTimeout(() => {
+                    if (socket.userId !== undefined) {
+                        const existingUser = LobbyService.getUser(socket.userId);
+                        if (!existingUser) {
+                            LobbyService.deleteUser(socket.userId);
 
-                const room = LobbyService.getRoomFromUserId(socket.userId);
-                if (room && room.leader.userId == socket.userId) {
-                    await LobbyService.deleteRoom(room);
-                    socket.broadcast.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
-                    socket.broadcast.to(room.roomId.toString()).emit("DELETEROOM", {});
-                }
-                LobbyService.deleteUser(socket.userId);
+                            const room = LobbyService.getRoomFromUserId(socket.userId);
+                            if (room) {
+                                room.removeMember(socket.userId);
+                                Vars.io.to(room.roomId).emit("LEAVEUSER", { userId: socket.userId });
+
+                                if (room.getUsers().length === 0) {
+                                    LobbyService.deleteRoom(room);
+                                    Vars.io.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
+                                }
+                            }
+                        }
+                    }
+                }, 5000);
             });
 
             socket.on("LOGIN", async ({ userName, phoneNumber }: RequestList["LOGIN"], callback) => {
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
+
                 const userNameValid = Util.userNameValidator(userName);
                 if (!userNameValid.success) return callback(userNameValid);
                 const phoneNumberValid = Util.phoneNumberValidator(phoneNumber);
                 if (!phoneNumberValid.success) return callback(phoneNumberValid);
 
-                if (!result.success)
+                if (!result.success) {
                     return callback({ success: false, errMsg: "해당 정보의 유저정보가 존재하지 않습니다." });
-                if (LobbyService.getUser(result.user?.userId))
-                    return callback({ success: false, errMsg: "이미 해당 정보로 로그인한 유저가 존재합니다." });
+                }
 
-                LobbyService.addUser(result.user!);
+                const existingUser = LobbyService.getUser(result.user?.userId);
+                if (existingUser) {
+                    return callback({ success: false, errMsg: "이미 해당 정보로 로그인한 유저가 존재합니다." });
+                }
+
+                LobbyService.addUser(result.user!, socket.id);
                 socket.userId = result.user?.userId;
+
                 await socket.join("lobby");
                 Vars.io.to("lobby").emit("JOINLOBBY", { user: result.user });
-                callback(result);
+                callback({ success: true, user: result.user });
+            });
+
+            socket.on("RECONNECT", async ({ userName, phoneNumber }, callback) => {
+                console.log(`RECONNECT called for user: ${userName}, ${phoneNumber}`);
+
+                const result = await DatabaseService.findUser({ userName, phoneNumber });
+
+                if (!result.success) {
+                    return callback({ success: false, errMsg: "해당 유저를 찾을 수 없습니다." });
+                }
+
+                const existingUser = LobbyService.getUser(result.user?.userId);
+
+                if (existingUser) {
+                    existingUser.socketId = socket.id;
+                } else {
+                    LobbyService.addUser(result.user!, socket.id);
+                }
+
+                socket.userId = result.user?.userId;
+
+                const room = LobbyService.getRoomFromUserId(result.user?.userId);
+                if (room) {
+                    const isAlreadyInRoom = room.getUsers().some((u) => u.userId === result.user?.userId);
+
+                    if (!isAlreadyInRoom) {
+                        await socket.join(room.roomId);
+                        Vars.io.to(room.roomId).emit("JOINUSER", { user: result.user });
+                    }
+                }
+
+                await socket.join("lobby");
+                Vars.io.to("lobby").emit("JOINLOBBY", { user: result.user });
+
+                callback({ success: true });
+            });
+
+            socket.on("LOGOUT", async ({ userId }, callback) => {
+                const user = LobbyService.getUser(userId);
+
+                if (user) {
+                    LobbyService.deleteUser(userId);
+
+                    const room = LobbyService.getRoomFromUserId(userId);
+                    if (room) {
+                        room.removeMember(userId);
+                        Vars.io.to(room.roomId).emit("LEAVEUSER", { userId });
+
+                        if (room.getUsers().length === 0) {
+                            LobbyService.deleteRoom(room);
+                            Vars.io.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
+                        }
+                    }
+
+                    callback({ success: true });
+                } else {
+                    callback({ success: false, errMsg: "User not found" });
+                }
             });
 
             socket.on("REGISTER", async ({ userName, phoneNumber }: RequestList["REGISTER"], callback) => {
@@ -58,15 +130,6 @@ export namespace SocketService {
                 const result = await DatabaseService.createUser({ userName, phoneNumber });
 
                 callback(result);
-            });
-
-            socket.on("DELETEUSER", async ({}: RequestList["DELETEUSER"], callback) => {
-                const user = LobbyService.getUser(socket.userId);
-                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
-
-                const deleted = DatabaseService.deleteUserInfo(user.userId);
-
-                return callback({ success: deleted });
             });
 
             socket.on("DELETEROOM", async ({}: RequestList["DELETEROOM"], callback) => {
@@ -112,14 +175,17 @@ export namespace SocketService {
                 });
             });
 
-            socket.on("STARTGAME", async ({}: RequestList["STARTGAME"], callback) => {
+            socket.on("STARTGAME", async (data, callback = () => {}) => {
                 const user = LobbyService.getUser(socket.userId);
-                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
+                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을 수 없습니다." });
+
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
 
-                if (room.leader.userId !== user.userId)
-                    return callback({ success: false, errMsg: "리더만 게임을 시작할수 있습니다." });
+                if (room.leader.userId !== user.userId) {
+                    return callback({ success: false, errMsg: "리더만 게임을 시작할 수 있습니다." });
+                }
+
                 room.getGame().startGame();
 
                 callback({ success: true, gameInfo: room.getGame().getGameInfo() });

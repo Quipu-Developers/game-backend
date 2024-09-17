@@ -6,6 +6,7 @@ export namespace LobbyService {
     export const lobbyUsers: LobbyUserInfo[] = [];
 
     export function getUser(userId?: number) {
+        console.log("Current lobby users:", lobbyUsers);
         return lobbyUsers.find((v) => v.userId == userId);
     }
 
@@ -24,8 +25,13 @@ export namespace LobbyService {
         return roomList.find((room) => room.roomId == user.roomId);
     }
 
-    export async function addUser(user: DefaultUserInfo) {
-        lobbyUsers.push(user);
+    export async function addUser(user: DefaultUserInfo, socketId: string) {
+        const existingUser = getUser(user.userId);
+        if (existingUser) {
+            existingUser.socketId = socketId;
+        } else {
+            lobbyUsers.push({ ...user, socketId });
+        }
     }
 
     export function getRoom(roomId: string) {
@@ -79,6 +85,7 @@ export class Room {
         );
         return deleted.length > 0;
     }
+
     public kickMember(userId: number) {
         return this.removeMember(userId);
     }
@@ -101,7 +108,7 @@ export class Room {
         return this.users.find((v) => v.userId == userId);
     }
 
-    addUser(user: DefaultUserInfo, power: RoomPower) {
+    addUser(user: LobbyUserInfo, power: RoomPower) {
         this.users.push({ ...user, roomId: this.roomId, power });
     }
 

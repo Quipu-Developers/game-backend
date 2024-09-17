@@ -7,6 +7,7 @@ interface DefaultUserInfo {
 
 interface LobbyUserInfo extends DefaultUserInfo {
     roomId?: string;
+    socketId: string;
 }
 
 type RoomPower = "leader" | "normal";
