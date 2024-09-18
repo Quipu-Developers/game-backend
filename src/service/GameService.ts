@@ -1,5 +1,6 @@
 import { Vars } from "../Vars";
 import { DatabaseService } from "./DatabaseService";
+import { LobbyService } from "./RoomService";
 
 export class Game {
     public users: DefaultUserInfo[] = [];
@@ -70,5 +71,9 @@ export class Game {
         for (const socket of sockets) {
             socket.leave(this.roomId);
         }
+
+        await LobbyService.deleteRoom(LobbyService.getRoom(this.roomId)!);
+        Vars.io.to("lobby").emit("DELETEROOM", { roomId: this.roomId });
+        Vars.io.to(this.roomId).emit("DELETEROOM", { roomId: this.roomId });
     }
 }

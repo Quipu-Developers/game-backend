@@ -182,9 +182,11 @@ export namespace SocketService {
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
 
-                if (room.leader.userId !== user.userId) {
+                if (room.leader.userId !== user.userId)
                     return callback({ success: false, errMsg: "리더만 게임을 시작할 수 있습니다." });
-                }
+
+                if (room.getGame().isStarted)
+                    return callback({ success: false, errMsg: "게임이 이미 시작되었습니다." });
 
                 await room.startGame(user.userId);
 
