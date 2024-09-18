@@ -51,12 +51,18 @@ export class Game {
     public startGame() {
         this.isStarted = true;
         this.startTime = Date.now();
+
+        this.timer = setTimeout(() => {
+            this.endGame();
+        }, 1000 * 60);
     }
 
     public async endGame() {
         if (!this.startTime) throw new Error("can't end game without startTime");
 
         clearTimeout(this.timer);
+
+        await Promise.all(this.users.map((user) => DatabaseService.updateUserInfo(user.userId, { score: user.score })));
 
         Vars.io.to(this.roomId).emit("ENDGAME", { users: this.users });
         const sockets = await Vars.io.sockets.in(this.roomId).fetchSockets();

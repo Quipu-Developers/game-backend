@@ -4,16 +4,6 @@ import { Router } from "express";
 
 const gameRouter = Router();
 
-gameRouter.post("/end-game", async (req, res) => {
-    const { roomId, users } = req.body;
-
-    const success = await DatabaseService.saveGameResults(roomId, users);
-
-    if (!success) return res.status(500).json({ success: false, errMsg: "Failed to save game results." });
-
-    return res.json({ success: true });
-});
-
 gameRouter.get("/game-end", async (req, res) => {
     const userId = +req.query.userId!;
     if (Number.isNaN(userId)) return res.status(500).send("userId must be a number");

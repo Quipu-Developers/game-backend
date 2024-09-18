@@ -150,18 +150,4 @@ export namespace DatabaseService {
 
         return JSON.parse(result) as string[];
     }
-
-    export async function saveGameResults(roomId: string, users: DefaultUserInfo[]) {
-        const conn = await Vars.sql.getConnection();
-        const results = users.map((user) => {
-            return conn.execute<ResultSetHeader>(`UPDATE Users SET score = ? WHERE userId = ?;`, [
-                user.score,
-                user.userId,
-            ]);
-        });
-
-        await Promise.all(results); // 모든 업데이트가 완료될 때까지 대기
-        conn.release();
-        return true;
-    }
 }
