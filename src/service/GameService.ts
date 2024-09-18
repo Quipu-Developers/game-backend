@@ -1,10 +1,9 @@
 import { Vars } from "../Vars";
-import { GameWords } from "../constants";
 import { DatabaseService } from "./DatabaseService";
 
 export class Game {
     public users: DefaultUserInfo[] = [];
-    public words: string[] = GameWords;
+    public words: string[] = [];
     public isStarted = false;
     public startTime?: number;
     public timer?: NodeJS.Timeout;
@@ -41,16 +40,17 @@ export class Game {
         user.score += 10;
 
         if (this.words.length == 0) {
-            this.words = await DatabaseService.getWords(48);
+            this.words = await DatabaseService.getWords(84);
             Vars.io.to(this.roomId.toString()).emit("NEWWORDS", { words: this.words });
         }
 
         return true;
     }
 
-    public startGame() {
+    public async startGame() {
         this.isStarted = true;
         this.startTime = Date.now();
+        this.words = await DatabaseService.getWords(84);
 
         this.timer = setTimeout(() => {
             this.endGame();

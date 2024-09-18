@@ -1,5 +1,6 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { Vars } from "./../Vars";
+import _ from "lodash";
 
 export namespace DatabaseService {
     export async function getGameEndInfo(userId: number) {
@@ -25,7 +26,18 @@ export namespace DatabaseService {
                 userName: personalList[personalIndex].userName,
                 score: personalList[personalIndex].score,
             },
-            top10: personalList.slice(0, 10),
+            top10: _.chain(personalList)
+                .groupBy("score")
+                .toArray()
+                .reverse()
+                .map((group, rank) =>
+                    group.map((user) => {
+                        user.rank = +rank + 1;
+                        return user;
+                    })
+                )
+                .flatMap()
+                .slice(0, 10),
         };
     }
 
@@ -123,21 +135,17 @@ export namespace DatabaseService {
                 },
                 {
                     role: "user",
-                    parts: [{ text: "1. 3글자로 이루어진 한글 단어이어야해" }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "좀 더 구체적인 조건을 알려주시면 더욱 멋진 단어를 만들어 드릴 수 있습니다." }],
-                },
-                {
-                    role: "user",
-                    parts: [{ text: "2. 사전에 있는 단어일수록 좋아" }],
+                    parts: [
+                        {
+                            text: `글자 세 개로 이루어진 한글 단어이어야해. (예를 들어 "자전거"가 적절한 예시임.) ("빵" "술" "밥" 등의 한글자 단어나 "오토바이" 같은 4글자 단어는 안됨)`,
+                        },
+                    ],
                 },
                 {
                     role: "model",
                     parts: [
                         {
-                            text: "어떤 분위기의 단어를 원하시는지 알려주시면 더욱 딱 맞는 단어를 찾아드릴 수 있습니다.",
+                            text: "넵 알겠습니다. 세 글자로 된 단어를 몇개 만들어드릴까요?",
                         },
                     ],
                 },
@@ -145,9 +153,9 @@ export namespace DatabaseService {
         });
 
         const result: string = (
-            await chat.sendMessage(`위 조건을 만족시키는 단어 ${num}개를 json 형식으로 출력해줘`)
+            await chat.sendMessage(`위 조건을 만족시키는 세 글자 단어 ${num}개를 json 형식으로 출력해줘`)
         ).response.text();
 
-        return JSON.parse(result) as string[];
+        return [...new Set(JSON.parse(result) as string[])].filter((word) => word.length <= 3);
     }
 }

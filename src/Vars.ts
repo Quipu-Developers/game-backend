@@ -35,13 +35,14 @@ export namespace Vars {
     export let model: GenerativeModel;
 
     export async function initializeGemini() {
-        const Gemini = new GoogleGenerativeAI(process.env.KRDICT_API_KEY);
+        const Gemini = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
         model = Gemini.getGenerativeModel({
             model: "gemini-1.5-flash",
             generationConfig: {
                 responseMimeType: "application/json",
             },
         });
+        console.log("init gemini complete");
     }
 
     export async function initialize() {

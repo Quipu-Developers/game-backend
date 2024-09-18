@@ -6,7 +6,6 @@ export namespace LobbyService {
     export const lobbyUsers: LobbyUserInfo[] = [];
 
     export function getUser(userId?: number) {
-        console.log("Current lobby users:", lobbyUsers);
         return lobbyUsers.find((v) => v.userId == userId);
     }
 
@@ -116,12 +115,12 @@ export class Room {
         this.chat.push({ userId, text });
     }
 
-    startGame(userId: number) {
+    public async startGame(userId: number) {
         const user = this.getUser(userId);
         if (!user) return;
 
         if (user.power == "leader") {
-            this.game.startGame();
+            return this.game.startGame();
         }
     }
 }

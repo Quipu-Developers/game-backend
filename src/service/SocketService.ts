@@ -186,7 +186,7 @@ export namespace SocketService {
                     return callback({ success: false, errMsg: "리더만 게임을 시작할 수 있습니다." });
                 }
 
-                room.getGame().startGame();
+                await room.startGame(user.userId);
 
                 callback({ success: true, gameInfo: room.getGame().getGameInfo() });
                 Vars.io.to(room.roomId.toString()).emit("STARTGAME", { gameInfo: room.getGame().getGameInfo() });
