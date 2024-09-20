@@ -3,11 +3,12 @@ import { Vars } from "./../Vars";
 import _ from "lodash";
 
 export namespace DatabaseService {
+    const teamTableName = process.env.PRODUCTION == "dev" ? "Test_Users" : "Users";
+
     export async function getGameEndInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
         const [personalList] = await conn.query<RowDataPacket[]>(
-            "SELECT * FROM ? WHERE userName NOT IN ('관리자1', '관리자2', '관리자3') ORDER BY score DESC;",
-            [process.env.PRODUCTION == "dev" ? "Test_Users" : "Users"]
+            `SELECT * FROM ${teamTableName} WHERE userName NOT IN ('관리자1', '관리자2', '관리자3') ORDER BY score DESC;`
         );
 
         conn.release();
@@ -44,9 +45,7 @@ export namespace DatabaseService {
 
     export async function getGameEndInfoRanks(userId: number) {
         const conn = await Vars.sql.getConnection();
-        const [list] = await conn.query<RowDataPacket[]>("SELECT * FROM ? ORDER BY score DESC;", [
-            process.env.PRODUCTION == "dev" ? "Test_Users" : "Users",
-        ]);
+        const [list] = await conn.query<RowDataPacket[]>(`SELECT * FROM ${teamTableName} ORDER BY score DESC;`);
         conn.release();
 
         const index: number = list.findIndex((item) => item.userId === userId);
@@ -74,11 +73,10 @@ export namespace DatabaseService {
 
     export async function findUser(info: { userName: string; phoneNumber: string }) {
         const conn = await Vars.sql.getConnection();
-        const [result] = await conn.execute<RowDataPacket[]>(`SELECT * FROM ? WHERE userName = ? AND phoneNumber = ?`, [
-            process.env.PRODUCTION == "dev" ? "Test_Users" : "Users",
-            info.userName,
-            info.phoneNumber,
-        ]);
+        const [result] = await conn.execute<RowDataPacket[]>(
+            `SELECT * FROM ${teamTableName} WHERE userName = ? AND phoneNumber = ?`,
+            [info.userName, info.phoneNumber]
+        );
         conn.release();
 
         if (result.length > 0) {
@@ -93,11 +91,10 @@ export namespace DatabaseService {
 
     export async function createUser(info: { userName: string; phoneNumber: string }) {
         const conn = await Vars.sql.getConnection();
-        const [result] = await conn.execute<ResultSetHeader>(`INSERT INTO ? (userName, phoneNumber) VALUES (?, ?);`, [
-            process.env.PRODUCTION == "dev" ? "Test_Users" : "Users",
-            info.userName,
-            info.phoneNumber,
-        ]);
+        const [result] = await conn.execute<ResultSetHeader>(
+            `INSERT INTO ${teamTableName} (userName, phoneNumber) VALUES (?, ?);`,
+            [info.userName, info.phoneNumber]
+        );
         conn.release();
 
         const userId = result.insertId;
@@ -110,11 +107,11 @@ export namespace DatabaseService {
 
         conn.query<RowDataPacket[]>(
             `
-                    UPDATE ?
+                    UPDATE ${teamTableName}
                     SET ?
                     WHERE userId = ?;
                 `,
-            [process.env.PRODUCTION == "dev" ? "Test_Users" : "Users", info, userId]
+            [info, userId]
         );
         conn.release();
         return true;
@@ -122,10 +119,7 @@ export namespace DatabaseService {
 
     export async function deleteUserInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(`DELETE FROM ? WHERE ?;`, [
-            process.env.PRODUCTION == "dev" ? "Test_Users" : "Users",
-            { userId },
-        ]);
+        conn.query<RowDataPacket[]>(`DELETE FROM ${teamTableName} WHERE ?;`, [{ userId }]);
         conn.release();
         return true;
     }
