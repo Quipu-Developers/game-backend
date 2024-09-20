@@ -62,36 +62,26 @@ export namespace SocketService {
             });
 
             socket.on("RECONNECT", async ({ userName, phoneNumber }, callback) => {
-                console.log(`RECONNECT called for user: ${userName}, ${phoneNumber}`);
-
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
 
                 if (!result.success) {
                     return callback({ success: false, errMsg: "해당 유저를 찾을 수 없습니다." });
                 }
 
+                // 새로운 소켓 ID로 갱신
                 const existingUser = LobbyService.getUser(result.user?.userId);
 
                 if (existingUser) {
-                    existingUser.socketId = socket.id;
-                } else {
-                    LobbyService.addUser(result.user!, socket.id);
+                    existingUser.socketId = socket.id; // 소켓 ID 업데이트
                 }
 
                 socket.userId = result.user?.userId;
-
                 const room = LobbyService.getRoomFromUserId(result.user?.userId);
+
                 if (room) {
-                    const isAlreadyInRoom = room.getUsers().some((u) => u.userId === result.user?.userId);
-
-                    if (!isAlreadyInRoom) {
-                        await socket.join(room.roomId);
-                        Vars.io.to(room.roomId).emit("JOINUSER", { user: result.user });
-                    }
+                    await socket.join(room.roomId); // 새로운 소켓 ID로 방에 재참여
+                    Vars.io.to(room.roomId).emit("RECONNECT", { user: result.user });
                 }
-
-                await socket.join("lobby");
-                Vars.io.to("lobby").emit("JOINLOBBY", { user: result.user });
 
                 callback({ success: true });
             });
@@ -190,8 +180,9 @@ export namespace SocketService {
 
                 await room.startGame(user.userId);
 
-                callback({ success: true, gameInfo: room.getGame().getGameInfo() });
                 Vars.io.to(room.roomId.toString()).emit("STARTGAME", { gameInfo: room.getGame().getGameInfo() });
+
+                callback({ success: true, gameInfo: room.getGame().getGameInfo() });
             });
 
             socket.on("LEAVEROOM", async ({}: RequestList["LEAVEROOM"], callback) => {
@@ -245,11 +236,12 @@ export namespace SocketService {
 
             socket.on("CHAT", ({ message }: RequestList["CHAT"], callback) => {
                 const user = LobbyService.getUser(socket.userId);
-                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
+                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을 수 없습니다." });
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
 
-                socket.broadcast.to(room.roomId).emit("CHAT", { userName: user.userName, message });
+                socket.broadcast.to(room.roomId.toString()).emit("CHAT", { userName: user.userName, message });
+                callback({ success: true });
             });
 
             socket.on("WORD", async ({ word }: RequestList["WORD"], callback) => {
