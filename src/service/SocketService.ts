@@ -15,25 +15,45 @@ export namespace SocketService {
 
                 if (!socket.userId) return;
 
-                setTimeout(() => {
-                    if (socket.userId !== undefined) {
-                        const existingUser = LobbyService.getUser(socket.userId);
-                        if (!existingUser) {
-                            LobbyService.deleteUser(socket.userId);
+                const existingUser = LobbyService.getUser(socket.userId);
+                if (!existingUser) return;
+                LobbyService.deleteUser(socket.userId);
 
-                            const room = LobbyService.getRoomFromUserId(socket.userId);
-                            if (room) {
-                                room.removeMember(socket.userId);
-                                Vars.io.to(room.roomId).emit("LEAVEUSER", { userId: socket.userId });
+                const room = LobbyService.getRoomFromUserId(socket.userId);
+                if (!room) return;
+                room.removeMember(socket.userId);
+                Vars.io.to(room.roomId).emit("LEAVEUSER", { userId: socket.userId });
 
-                                if (room.getUsers().length === 0) {
-                                    LobbyService.deleteRoom(room);
-                                    Vars.io.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
-                                }
-                            }
-                        }
-                    }
-                }, 5000);
+                if (room.getUsers().length === 0) {
+                    LobbyService.deleteRoom(room);
+                    Vars.io.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
+                }
+            });
+
+            socket.on("RECONNECT", async ({ userName, phoneNumber }, callback) => {
+                console.log("reconnect");
+                const result = await DatabaseService.findUser({ userName, phoneNumber });
+
+                if (!result.success) {
+                    return callback({ success: false, errMsg: "해당 유저를 찾을 수 없습니다." });
+                }
+
+                // 새로운 소켓 ID로 갱신
+                const existingUser = LobbyService.getUser(result.user?.userId);
+
+                if (existingUser) {
+                    existingUser.socketId = socket.id; // 소켓 ID 업데이트
+                }
+
+                socket.userId = result.user?.userId;
+                const room = LobbyService.getRoomFromUserId(result.user?.userId);
+
+                if (room) {
+                    await socket.join(room.roomId); // 새로운 소켓 ID로 방에 재참여
+                    Vars.io.to(room.roomId).emit("RECONNECT", { user: result.user });
+                }
+
+                callback({ success: true });
             });
 
             socket.on("LOGIN", async ({ userName, phoneNumber }: RequestList["LOGIN"], callback) => {
@@ -59,31 +79,6 @@ export namespace SocketService {
                 await socket.join("lobby");
                 Vars.io.to("lobby").emit("JOINLOBBY", { user: result.user });
                 callback({ success: true, user: result.user });
-            });
-
-            socket.on("RECONNECT", async ({ userName, phoneNumber }, callback) => {
-                const result = await DatabaseService.findUser({ userName, phoneNumber });
-
-                if (!result.success) {
-                    return callback({ success: false, errMsg: "해당 유저를 찾을 수 없습니다." });
-                }
-
-                // 새로운 소켓 ID로 갱신
-                const existingUser = LobbyService.getUser(result.user?.userId);
-
-                if (existingUser) {
-                    existingUser.socketId = socket.id; // 소켓 ID 업데이트
-                }
-
-                socket.userId = result.user?.userId;
-                const room = LobbyService.getRoomFromUserId(result.user?.userId);
-
-                if (room) {
-                    await socket.join(room.roomId); // 새로운 소켓 ID로 방에 재참여
-                    Vars.io.to(room.roomId).emit("RECONNECT", { user: result.user });
-                }
-
-                callback({ success: true });
             });
 
             socket.on("LOGOUT", async ({ userId }, callback) => {

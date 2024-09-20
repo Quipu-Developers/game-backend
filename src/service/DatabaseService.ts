@@ -3,12 +3,12 @@ import { Vars } from "./../Vars";
 import _ from "lodash";
 
 export namespace DatabaseService {
-    const teamTableName = process.env.PRODUCTION == "dev" ? "Test_Users" : "Users";
+    const userTableName = process.env.PRODUCTION == "dev" ? "Test_Users" : "Users";
 
     export async function getGameEndInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
         const [personalList] = await conn.query<RowDataPacket[]>(
-            `SELECT * FROM ${teamTableName} WHERE userName NOT IN ('관리자1', '관리자2', '관리자3') ORDER BY score DESC;`
+            `SELECT * FROM ${userTableName} WHERE userName NOT IN ('관리자1', '관리자2', '관리자3') ORDER BY score DESC;`
         );
 
         conn.release();
@@ -45,7 +45,7 @@ export namespace DatabaseService {
 
     export async function getGameEndInfoRanks(userId: number) {
         const conn = await Vars.sql.getConnection();
-        const [list] = await conn.query<RowDataPacket[]>(`SELECT * FROM ${teamTableName} ORDER BY score DESC;`);
+        const [list] = await conn.query<RowDataPacket[]>(`SELECT * FROM ${userTableName} ORDER BY score DESC;`);
         conn.release();
 
         const index: number = list.findIndex((item) => item.userId === userId);
@@ -74,7 +74,7 @@ export namespace DatabaseService {
     export async function findUser(info: { userName: string; phoneNumber: string }) {
         const conn = await Vars.sql.getConnection();
         const [result] = await conn.execute<RowDataPacket[]>(
-            `SELECT * FROM ${teamTableName} WHERE userName = ? AND phoneNumber = ?`,
+            `SELECT * FROM ${userTableName} WHERE userName = ? AND phoneNumber = ?`,
             [info.userName, info.phoneNumber]
         );
         conn.release();
@@ -82,7 +82,12 @@ export namespace DatabaseService {
         if (result.length > 0) {
             return {
                 success: true,
-                user: { userId: result[0].userId, userName: info.userName, phoneNumber: info.phoneNumber, score: 0 },
+                user: {
+                    userId: result[0].userId,
+                    userName: info.userName,
+                    phoneNumber: info.phoneNumber,
+                    score: result[0].score,
+                },
             };
         }
 
@@ -92,7 +97,7 @@ export namespace DatabaseService {
     export async function createUser(info: { userName: string; phoneNumber: string }) {
         const conn = await Vars.sql.getConnection();
         const [result] = await conn.execute<ResultSetHeader>(
-            `INSERT INTO ${teamTableName} (userName, phoneNumber) VALUES (?, ?);`,
+            `INSERT INTO ${userTableName} (userName, phoneNumber) VALUES (?, ?);`,
             [info.userName, info.phoneNumber]
         );
         conn.release();
@@ -107,7 +112,7 @@ export namespace DatabaseService {
 
         conn.query<RowDataPacket[]>(
             `
-                    UPDATE ${teamTableName}
+                    UPDATE ${userTableName}
                     SET ?
                     WHERE userId = ?;
                 `,
@@ -119,7 +124,7 @@ export namespace DatabaseService {
 
     export async function deleteUserInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
-        conn.query<RowDataPacket[]>(`DELETE FROM ${teamTableName} WHERE ?;`, [{ userId }]);
+        conn.query<RowDataPacket[]>(`DELETE FROM ${userTableName} WHERE ?;`, [{ userId }]);
         conn.release();
         return true;
     }
@@ -159,15 +164,15 @@ export namespace DatabaseService {
                 await chat.sendMessage(`위 조건을 만족시키는 세 글자 단어 ${num}개를 json 형식으로 출력해줘`)
             ).response.text();
 
-            return [...new Set(JSON.parse(result) as string[])].filter((word) => word.length <= 3);
+            return (JSON.parse(result) as string[]).filter((word) => word.length <= 3);
         }
 
-        const words: string[] = [];
+        const words = new Set<string>();
 
-        while (words.length < num) {
-            words.push(...(await load()));
+        while (words.size < num) {
+            (await load()).forEach((word) => words.add(word));
         }
 
-        return words.slice(0, num);
+        return Array.from(words).slice(0, num);
     }
 }

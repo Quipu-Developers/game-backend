@@ -9,13 +9,18 @@ export class Game {
     public startTime?: number;
     public timer?: NodeJS.Timeout;
 
+    private scoreMap = new Map<number, number>();
+
     constructor(public roomId: string) {}
 
     public getGameInfo() {
         return {
             words: this.words,
             isStarted: this.isStarted,
-            users: this.users,
+            users: this.users.map((user) => {
+                user.score = this.scoreMap.get(user.userId)!;
+                return user;
+            }),
         };
     }
 
@@ -25,6 +30,7 @@ export class Game {
 
     public addUser(user: DefaultUserInfo) {
         this.users.push(user);
+        this.scoreMap.set(user.userId, 0);
     }
 
     public removeUser(user: DefaultUserInfo) {
@@ -38,7 +44,7 @@ export class Game {
         const deleted = this.words.splice(this.words.indexOf(word), 1);
         if (deleted.length == 0) return false;
 
-        user.score += 10;
+        this.scoreMap.set(user.userId, this.scoreMap.get(user.userId)! + 10);
 
         if (this.words.length == 0) {
             this.words = await DatabaseService.getWords(84);
@@ -63,7 +69,16 @@ export class Game {
 
         clearTimeout(this.timer);
 
-        await Promise.all(this.users.map((user) => DatabaseService.updateUserInfo(user.userId, { score: user.score })));
+        await Promise.all(
+            this.users.map((user) =>
+                (async () => {
+                    const newScore = this.scoreMap.get(user.userId)!;
+                    if (user.score > newScore) return;
+                    user.score = newScore;
+                    await DatabaseService.updateUserInfo(user.userId, { score: user.score });
+                })()
+            )
+        );
 
         Vars.io.to(this.roomId).emit("ENDGAME", { users: this.users });
         const sockets = await Vars.io.sockets.in(this.roomId).fetchSockets();
