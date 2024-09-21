@@ -3,6 +3,9 @@ import { Vars } from "../Vars";
 import { DatabaseService } from "./DatabaseService";
 import { LobbyService } from "./RoomService";
 
+let disconnectTimeouts: Record<string, NodeJS.Timeout | null> = {}; // 모든 소켓의 disconnectTimeout을 추적하는 객체
+let reconnectStates: Record<string, boolean> = {}; // 모든 소켓의 재연결 상태를 추적하는 객체
+
 export namespace SocketService {
     export async function initialize() {
         listen();
@@ -10,9 +13,7 @@ export namespace SocketService {
 
     function listen() {
         Vars.io.on("connection", (socket) => {
-            // 각 소켓에 고유한 상태 및 타이머를 저장
-            let disconnectTimeout: NodeJS.Timeout | null = null;
-            let isReconnected = false; // 재연결 여부 상태를 추적
+            const socketId = socket.id; // 소켓 고유 ID 사용
 
             // 유저가 연결이 끊길 때 처리
             socket.on("disconnect", async (reason) => {
@@ -20,16 +21,15 @@ export namespace SocketService {
 
                 if (!socket.userId) return;
 
-                // 만약 재연결 상태라면 타이머를 실행하지 않음
-                if (isReconnected) {
+                // 이미 재연결된 상태인지 확인하고, 그렇지 않으면 타이머 설정
+                if (reconnectStates[socketId]) {
                     console.log("Already reconnected, no need to set disconnect timeout.");
                     return;
                 }
 
-                // 5초 동안 재연결이 없으면 유저 정보 삭제
-                disconnectTimeout = setTimeout(() => {
+                disconnectTimeouts[socketId] = setTimeout(() => {
                     // 타이머가 만료되기 전 재연결이 발생하면 삭제 중단
-                    if (isReconnected || !socket.userId) {
+                    if (reconnectStates[socketId] || !socket.userId) {
                         console.log("User reconnected or userId is invalid, skipping deletion.");
                         return;
                     }
@@ -52,7 +52,8 @@ export namespace SocketService {
 
                     // 로비에서 유저 삭제
                     LobbyService.deleteUser(socket.userId);
-                    disconnectTimeout = null; // 타이머 초기화
+                    delete disconnectTimeouts[socketId]; // 타이머 제거
+                    delete reconnectStates[socketId]; // 재연결 상태 제거
                 }, 5000); // 5초 대기
             });
 
@@ -60,11 +61,11 @@ export namespace SocketService {
             socket.on("RECONNECT", async ({ userName, phoneNumber }, callback) => {
                 console.log("reconnect");
 
-                // 재연결되면 상태 및 타이머 해제
-                isReconnected = true;
-                if (disconnectTimeout) {
-                    clearTimeout(disconnectTimeout); // 타이머 해제
-                    disconnectTimeout = null; // 타이머 초기화
+                // 재연결되면 타이머 해제 및 상태 초기화
+                reconnectStates[socketId] = true; // 재연결된 것으로 상태 설정
+                if (disconnectTimeouts[socketId]) {
+                    clearTimeout(disconnectTimeouts[socketId]); // 타이머 해제
+                    delete disconnectTimeouts[socketId]; // 타이머 삭제
                 }
 
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
