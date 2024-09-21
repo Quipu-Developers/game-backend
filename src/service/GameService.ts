@@ -17,10 +17,7 @@ export class Game {
         return {
             words: this.words,
             isStarted: this.isStarted,
-            users: this.users.map((user) => {
-                user.score = this.scoreMap.get(user.userId)!;
-                return user;
-            }),
+            users: this.users.map((user) => ({ ...user, score: this.scoreMap.get(user.userId)! })),
         };
     }
 
@@ -74,7 +71,7 @@ export class Game {
                 (async () => {
                     const newScore = this.scoreMap.get(user.userId)!;
                     if (user.score > newScore) return;
-                    user.score = newScore;
+                    user.score = this.scoreMap.get(user.userId)!;
                     await DatabaseService.updateUserInfo(user.userId, { score: user.score });
                 })()
             )
