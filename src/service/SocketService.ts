@@ -10,52 +10,83 @@ export namespace SocketService {
 
     function listen() {
         Vars.io.on("connection", (socket) => {
+            // 각 소켓에 고유한 상태 및 타이머를 저장
+            let disconnectTimeout: NodeJS.Timeout | null = null;
+            let isReconnected = false; // 재연결 여부 상태를 추적
+
+            // 유저가 연결이 끊길 때 처리
             socket.on("disconnect", async (reason) => {
-                console.log("socket disconnected : ", reason);
+                console.log("socket disconnected: ", reason);
 
                 if (!socket.userId) return;
 
-                const existingUser = LobbyService.getUser(socket.userId);
-                if (!existingUser) return;
-                LobbyService.deleteUser(socket.userId);
-
-                const room = LobbyService.getRoomFromUserId(socket.userId);
-                if (!room) return;
-                room.removeMember(socket.userId);
-                Vars.io.to(room.roomId).emit("LEAVEUSER", { userId: socket.userId });
-
-                if (room.getUsers().length === 0) {
-                    LobbyService.deleteRoom(room);
-                    Vars.io.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
+                // 만약 재연결 상태라면 타이머를 실행하지 않음
+                if (isReconnected) {
+                    console.log("Already reconnected, no need to set disconnect timeout.");
+                    return;
                 }
+
+                // 5초 동안 재연결이 없으면 유저 정보 삭제
+                disconnectTimeout = setTimeout(() => {
+                    // 타이머가 만료되기 전 재연결이 발생하면 삭제 중단
+                    if (isReconnected || !socket.userId) {
+                        console.log("User reconnected or userId is invalid, skipping deletion.");
+                        return;
+                    }
+
+                    const existingUser = LobbyService.getUser(socket.userId);
+                    if (!existingUser) return;
+
+                    // 방에서 유저 제거 및 유저 삭제
+                    const room = LobbyService.getRoomFromUserId(socket.userId);
+                    if (room) {
+                        console.log("User deletion after timeout.");
+                        room.removeMember(socket.userId);
+                        Vars.io.to(room.roomId).emit("LEAVEUSER", { user: existingUser, roomId: room.roomId });
+
+                        if (room.getUsers().length === 0) {
+                            LobbyService.deleteRoom(room);
+                            Vars.io.to("lobby").emit("DELETEROOM", { roomId: room.roomId });
+                        }
+                    }
+
+                    // 로비에서 유저 삭제
+                    LobbyService.deleteUser(socket.userId);
+                    disconnectTimeout = null; // 타이머 초기화
+                }, 5000); // 5초 대기
             });
 
+            // 유저가 재연결될 때 처리
             socket.on("RECONNECT", async ({ userName, phoneNumber }, callback) => {
                 console.log("reconnect");
+
+                // 재연결되면 상태 및 타이머 해제
+                isReconnected = true;
+                if (disconnectTimeout) {
+                    clearTimeout(disconnectTimeout); // 타이머 해제
+                    disconnectTimeout = null; // 타이머 초기화
+                }
+
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
 
                 if (!result.success) {
                     return callback({ success: false, errMsg: "해당 유저를 찾을 수 없습니다." });
                 }
 
-                // 새로운 소켓 ID로 갱신
-                const existingUser = LobbyService.getUser(result.user?.userId);
-
-                if (existingUser) {
-                    existingUser.socketId = socket.id; // 소켓 ID 업데이트
-                }
-
+                // 유저 ID와 방 정보 복구
                 socket.userId = result.user?.userId;
                 const room = LobbyService.getRoomFromUserId(result.user?.userId);
 
+                // 유저가 있던 방으로 다시 참여
                 if (room) {
-                    await socket.join(room.roomId); // 새로운 소켓 ID로 방에 재참여
+                    await socket.join(room.roomId);
                     Vars.io.to(room.roomId).emit("RECONNECT", { user: result.user });
                 }
 
-                callback({ success: true });
+                callback({ success: true, room });
             });
 
+            // 로그인 이벤트 처리
             socket.on("LOGIN", async ({ userName, phoneNumber }: RequestList["LOGIN"], callback) => {
                 const result = await DatabaseService.findUser({ userName, phoneNumber });
 
@@ -81,6 +112,7 @@ export namespace SocketService {
                 callback({ success: true, user: result.user });
             });
 
+            // 로그아웃 이벤트 처리
             socket.on("LOGOUT", async ({ userId }, callback) => {
                 const user = LobbyService.getUser(userId);
 
