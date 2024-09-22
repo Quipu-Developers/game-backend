@@ -8,7 +8,7 @@ export namespace DatabaseService {
     export async function getGameEndInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
         const [personalList] = await conn.query<RowDataPacket[]>(
-            `SELECT * FROM ${userTableName} WHERE userName NOT IN ('관리자1', '관리자2', '관리자3') ORDER BY score DESC;`
+            `SELECT * FROM ${userTableName} WHERE userName NOT IN ('quipu') ORDER BY score DESC;`
         );
 
         conn.release();
