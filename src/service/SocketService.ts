@@ -53,6 +53,15 @@ export namespace SocketService {
                 socket.userName = userName;
                 socket.phoneNumber = phoneNumber;
 
+                const room = LobbyService.getRoomFromUserId(result.user?.userId);
+
+                if (room) {
+                    console.log(`reconnect to room#${room.roomId}`);
+                    socket.join(room.roomId);
+                } else {
+                    socket.join("lobby");
+                }
+
                 if (disconnectTimeouts[session]) {
                     clearTimeout(disconnectTimeouts[session]); // 타이머 해제
                     delete disconnectTimeouts[session]; // 타이머 삭제
@@ -84,7 +93,8 @@ export namespace SocketService {
                 socket.userName = userName;
                 socket.phoneNumber = phoneNumber;
 
-                await socket.join("lobby");
+                socket.join("lobby");
+
                 Vars.io.to("lobby").emit("JOINLOBBY", { user: result.user });
                 callback({ success: true, user: result.user });
             });
@@ -170,6 +180,7 @@ export namespace SocketService {
             });
 
             socket.on("STARTGAME", async (data, callback = () => {}) => {
+                console.log(`#${socket.userId} started game`);
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을 수 없습니다." });
 
@@ -244,7 +255,9 @@ export namespace SocketService {
                 const room = LobbyService.getRoomFromUserId(user.userId);
                 if (!room) return callback({ success: false, errMsg: "방이 존재하지 않습니다." });
 
-                socket.broadcast.to(room.roomId.toString()).emit("CHAT", { userName: user.userName, message });
+                console.log(`MSG|roomId : ${room.roomId}|${user.userName} : ${message}`);
+
+                socket.broadcast.to(room.roomId).emit("CHAT", { userName: user.userName, message });
                 callback({ success: true });
             });
 
