@@ -57,6 +57,8 @@ export namespace SocketService {
                     clearTimeout(disconnectTimeouts[session]); // 타이머 해제
                     delete disconnectTimeouts[session]; // 타이머 삭제
                 }
+
+                callback({ success: true });
             });
 
             // 로그인 이벤트 처리
