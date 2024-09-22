@@ -7,9 +7,7 @@ export namespace DatabaseService {
 
     export async function getGameEndInfo(userId: number) {
         const conn = await Vars.sql.getConnection();
-        const [personalList] = await conn.query<RowDataPacket[]>(
-            `SELECT * FROM ${userTableName} WHERE userName NOT IN ('quipu') ORDER BY score DESC;`
-        );
+        const [personalList] = await conn.query<RowDataPacket[]>(`SELECT * FROM ${userTableName} ORDER BY score DESC;`);
 
         conn.release();
         const personalIndex = personalList.findIndex((item) => item.userId === userId);
@@ -29,15 +27,12 @@ export namespace DatabaseService {
                 score: personalList[personalIndex].score,
             },
             top10: _.chain(personalList)
+                .filter((user) => !["quipu", "quipu2", "quipu3"].includes(user.userName))
+                .map((user, rank) => ({ ...user, rank: +rank + 1 }))
                 .groupBy("score")
                 .toArray()
                 .reverse()
-                .map((group, rank) =>
-                    group.map((user) => {
-                        user.rank = +rank + 1;
-                        return user;
-                    })
-                )
+                .map((group) => group.map((user) => ({ ...user, rank: group[0].rank })))
                 .flatMap()
                 .slice(0, 10),
         };
