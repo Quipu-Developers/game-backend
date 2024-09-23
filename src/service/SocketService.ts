@@ -180,7 +180,6 @@ export namespace SocketService {
             });
 
             socket.on("STARTGAME", async (data, callback = () => {}) => {
-                console.log(`#${socket.userId} started game`);
                 const user = LobbyService.getUser(socket.userId);
                 if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을 수 없습니다." });
 

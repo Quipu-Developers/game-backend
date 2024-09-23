@@ -56,11 +56,14 @@ export class Game {
     public async startGame() {
         this.isStarted = true;
         this.startTime = Date.now();
+
         this.words = await DatabaseService.getWords(84);
 
-        this.timer = setTimeout(() => {
-            this.endGame();
-        }, 1000 * 60);
+        setTimeout(() => {
+            this.timer = setTimeout(() => {
+                this.endGame();
+            }, 1000 * 60);
+        }, 5000);
     }
 
     public async endGame() {
