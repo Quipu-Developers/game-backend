@@ -165,8 +165,6 @@ export namespace SocketService {
             });
 
             socket.on("GETROOMS", async ({}: RequestList["GETROOMS"], callback) => {
-                const user = LobbyService.getUser(socket.userId);
-                if (!user) return callback({ success: false, errMsg: "해당 유저를 로비에서 찾을수 없습니다." });
                 const rooms = LobbyService.getRooms();
                 callback({
                     success: true,
