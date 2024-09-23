@@ -1,4 +1,4 @@
-import { GameWords } from "src/constants";
+import { GameWords } from "../constants";
 import { Vars } from "../Vars";
 import { DatabaseService } from "./DatabaseService";
 import { LobbyService } from "./RoomService";
@@ -102,6 +102,8 @@ export class Game {
     }
 }
 
+const CachedWords: string[] = [];
+
 async function getWords(num: number) {
     async function load() {
         try {
@@ -134,13 +136,24 @@ async function getWords(num: number) {
                 ],
             });
 
-            const result: string = (
+            const geminiResponse: string = (
                 await chat.sendMessage(`위 조건을 만족시키는 세 글자 단어 ${num}개를 json 형식으로 출력해줘`)
             ).response.text();
 
-            return (JSON.parse(result) as string[]).filter((word) => word.length <= 3);
+            const words = (JSON.parse(geminiResponse) as string[]).filter((word) => word.length <= 3);
+
+            for (const word of words) {
+                if (CachedWords.length < 100) {
+                    CachedWords.push(word);
+                } else {
+                    CachedWords.shift();
+                    CachedWords.push(word);
+                }
+            }
+
+            return words;
         } catch (error) {
-            return GameWords;
+            return [...CachedWords, ...GameWords];
         }
     }
 
