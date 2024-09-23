@@ -71,20 +71,26 @@ export class Game {
 
         clearTimeout(this.timer);
 
+        const currentUserInfo = this.users.map((user) => ({
+            userId: user.userId,
+            userName: user.userName,
+            score: this.scoreMap.get(user.userId)!,
+        }));
+
         await Promise.all(
             this.users.map((user) =>
                 (async () => {
                     const newScore = this.scoreMap.get(user.userId)!;
                     if (user.score > newScore) return;
-                    user.score = this.scoreMap.get(user.userId)!;
+                    user.score = newScore;
                     await DatabaseService.updateUserInfo(user.userId, { score: user.score });
                 })()
             )
         );
 
-        Vars.io.to(this.roomId).emit("ENDGAME", { users: this.users });
-        const sockets = await Vars.io.sockets.in(this.roomId).fetchSockets();
+        Vars.io.to(this.roomId).emit("ENDGAME", { users: currentUserInfo });
 
+        const sockets = await Vars.io.sockets.in(this.roomId).fetchSockets();
         for (const socket of sockets) {
             socket.leave(this.roomId);
         }
