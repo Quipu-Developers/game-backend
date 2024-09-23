@@ -38,12 +38,14 @@ export class Game {
         const user = this.getUser(userId);
         if (!user) return false;
 
-        const deleted = this.words.splice(this.words.indexOf(word), 1);
-        if (deleted.length == 0) return false;
+        const wordIndex = this.words.indexOf(word);
+        if (wordIndex === -1) return false;
+
+        this.words.splice(wordIndex, 1);
 
         this.scoreMap.set(user.userId, this.scoreMap.get(user.userId)! + 10);
 
-        if (this.words.length == 0) {
+        if (this.words.length === 0) {
             this.words = await DatabaseService.getWords(84);
             Vars.io.to(this.roomId.toString()).emit("NEWWORDS", { words: this.words });
         }
