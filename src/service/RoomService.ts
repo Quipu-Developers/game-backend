@@ -69,9 +69,9 @@ export namespace LobbyService {
 }
 
 export class Room {
+    public chat: { userId: number; text: string }[] = [];
     private users: RoomUserInfo[] = [];
     private game: Game;
-    public chat: { userId: number; text: string }[] = [];
 
     constructor(game: Game, public roomId: string, public roomName: string) {
         this.game = game;
@@ -107,11 +107,11 @@ export class Room {
         return this.users.find((v) => v.userId == userId);
     }
 
-    addUser(user: LobbyUserInfo, power: RoomPower) {
+    public addUser(user: LobbyUserInfo, power: RoomPower) {
         this.users.push({ ...user, roomId: this.roomId, power });
     }
 
-    addChat(userId: number, text: string) {
+    public addChat(userId: number, text: string) {
         this.chat.push({ userId, text });
     }
 
