@@ -195,6 +195,7 @@ export namespace SocketService {
                 await room.startGame(user.userId);
 
                 Vars.io.to(room.roomId.toString()).emit("STARTGAME", { gameInfo: room.getGame().getGameInfo() });
+                Vars.io.to("lobby").emit("STARTGAME", { roomId: room.roomId });
 
                 callback({ success: true, gameInfo: room.getGame().getGameInfo() });
             });
