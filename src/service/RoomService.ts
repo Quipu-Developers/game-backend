@@ -55,7 +55,7 @@ export namespace LobbyService {
         return room;
     }
 
-    export async function deleteRoom(room: Room) {
+    export function deleteRoom(room: Room) {
         roomList.splice(
             roomList.findIndex((item) => item.roomId == room.roomId),
             1
@@ -82,6 +82,9 @@ export class Room {
             this.users.findIndex((user) => user.userId == userId),
             1
         );
+        if (this.users.length == 0) {
+            LobbyService.deleteRoom(this);
+        }
         return deleted.length > 0;
     }
 
